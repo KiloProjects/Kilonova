@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -21,7 +20,6 @@ import (
 	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/KiloProjects/kilonova/infra/profiler"
 	"github.com/KiloProjects/kilonova/net/llm"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/riandyrn/otelchi"
 	slogmulti "github.com/samber/slog-multi"
@@ -91,7 +89,7 @@ func Kilonova(ctx context.Context) error {
 	// handed down; a nil provider means "not configured".
 	var llmProvider llm.Provider
 	if config.Integrations.OpenAIToken != "" {
-		llmProvider = llm.NewOpenAI(config.Integrations.OpenAIToken, config.Integrations.OpenAIModel, config.Integrations.OpenAIVisionModel, cmp.Or(flags.NavbarBranding.Value(), "Kilonova"))
+		llmProvider = llm.NewOpenAI(config.Integrations.OpenAIToken, config.Integrations.OpenAIModel, config.Integrations.OpenAIVisionModel, "Kilonova")
 	}
 
 	// for graceful setup and shutdown

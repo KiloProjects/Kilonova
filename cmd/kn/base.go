@@ -86,7 +86,6 @@ func loadFlags(ctx context.Context, store config.FlagStore) error {
 	if err != nil {
 		return fmt.Errorf("couldn't load flags: %w", err)
 	}
-	config.ApplyFlagOverrides(ctx)
 
 	config.SetOnFlagUpdate(func(name string) {
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)

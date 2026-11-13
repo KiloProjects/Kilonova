@@ -14,7 +14,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval/language"
 	"github.com/KiloProjects/kilonova/sudoapi"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 type ArchiveGenOptions struct {
@@ -203,9 +202,7 @@ func (ag *archiveGenerator) addGraderProperties(ctx context.Context) error {
 			fmt.Fprintf(&buf, "default_score=%s\n", ag.pb.DefaultPoints)
 		}
 		fmt.Fprintf(&buf, "score_precision=%d\n", ag.pb.ScorePrecision)
-		if ag.pb.SourceSize != flags.DefaultSourceSize.Value() {
-			fmt.Fprintf(&buf, "source_size=%d", ag.pb.SourceSize)
-		}
+		fmt.Fprintf(&buf, "source_size=%d\n", ag.pb.SourceSize)
 		fmt.Fprintf(&buf, "console_input=%t\n", ag.pb.ConsoleInput)
 		fmt.Fprintf(&buf, "test_name=%s\n", ag.testName)
 		fmt.Fprintf(&buf, "scoring_strategy=%s\n", ag.pb.ScoringStrategy)

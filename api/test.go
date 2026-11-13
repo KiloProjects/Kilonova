@@ -12,6 +12,7 @@ import (
 	"github.com/KiloProjects/kilonova/domain/archive/test"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/shopspring/decimal"
 )
 
@@ -160,6 +161,8 @@ func (s *API) processArchive(r *http.Request, firstImport bool) error {
 		FirstImport: firstImport,
 
 		ForceStringIDs: r.FormValue("forceStringIDs") == "true",
+
+		MaxMemoryKB: flags.TestMaxMemKB.Value(),
 	}
 
 	return test.ProcessTestArchive(context.WithoutCancel(r.Context()), util.Problem(r), ar, s.base, params)

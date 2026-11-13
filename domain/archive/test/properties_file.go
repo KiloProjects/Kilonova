@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 
 	"github.com/gorilla/schema"
 	"github.com/shopspring/decimal"
@@ -185,7 +184,7 @@ func ProcessPropertiesFile(ctx *ArchiveCtx, r io.Reader) error {
 	}
 	if rawProps.Memory != nil {
 		props.MemoryLimit = new(int((*rawProps.Memory) * 1024.0))
-		if maxMem := flags.TestMaxMemKB.Value(); *props.MemoryLimit > maxMem {
+		if maxMem := ctx.params.MaxMemoryKB; *props.MemoryLimit > maxMem {
 			return kilonova.Statusf(400, "Maximum memory must not exceed %f MB", float64(maxMem)/1024.0)
 		}
 	}

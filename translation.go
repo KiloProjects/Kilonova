@@ -9,8 +9,16 @@ import (
 
 	_ "embed"
 
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+// LanguageFallbacks counts lookups that had no usable language and fell back to English.
+// Should trend to zero once every caller carries the language in its context.
+var LanguageFallbacks = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "kn_language_fallback_total",
+	Help: "Translation/language lookups that fell back to English because no valid language was given",
+}, []string{"source"})
 
 // v1
 
@@ -23,18 +31,14 @@ var translations map[string]translation
 //go:embed _translations.json
 var keys []byte
 
-func TranslationKeyExists(line string) bool {
-	_, ok := translations[line]
-	return ok
-}
-
 func GetText(lang, line string, args ...any) string {
 	if _, ok := translations[line]; !ok {
 		slog.WarnContext(context.TODO(), "Invalid translation key", slog.Any("key", line))
 		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
-		return fmt.Sprintf(translations[line][flags.DefaultLanguage()], args...)
+		LanguageFallbacks.WithLabelValues("get_text").Inc()
+		return fmt.Sprintf(translations[line]["en"], args...)
 	}
 	return fmt.Sprintf(translations[line][lang], args...)
 }
@@ -44,7 +48,8 @@ func MaybeGetText(lang, line string, args ...any) string {
 		return line
 	}
 	if _, ok := translations[line][lang]; !ok {
-		return fmt.Sprintf(translations[line][flags.DefaultLanguage()], args...)
+		LanguageFallbacks.WithLabelValues("maybe_get_text").Inc()
+		return fmt.Sprintf(translations[line]["en"], args...)
 	}
 	return fmt.Sprintf(translations[line][lang], args...)
 }

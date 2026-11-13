@@ -112,8 +112,6 @@ Runtime flags live in the `flags` table of the platform database, one row per fl
 
 The first start against a database with no flags imports `KN_FLAGS_PATH` if that file exists, logs what it imported, and records that the import happened. Every later start ignores the file, so an admin's changes always win. The file is never modified, so rolling back to an older binary finds it exactly as it was. Once you have confirmed the import, the file can be deleted.
 
-`KN_FLAG_OVERRIDES` still overrides any flag for a single process, is applied after the stored values, and is never written back.
-
 ## Moved to the flag store
 
 | Flag | Default | Replaces |
@@ -132,4 +130,4 @@ The flags listed in the tables above with a `flag ...` origin no longer exist as
  and `grader.scratch_dir` have no replacement: both processes use `$KN_DATA_DIR/logs`, and the grader uses `$KN_DATA_DIR/scratch`. Move or symlink your old log directory if you want the history in one place.
 
 `KN_CONF_PATH`,
- `KN_GRADER_CONF_PATH`, `-c/--config` on `kn main` and `--grader-config` on `kn grader-serve`. `KN_FLAG_OVERRIDES` (`key=value,key=value` for one-off flag overrides) keeps working.
+ `KN_GRADER_CONF_PATH`, `-c/--config` on `kn main` and `--grader-config` on `kn grader-serve`.

@@ -404,7 +404,7 @@ func (s *BaseAPI) RunMOSS(ctx context.Context, contest *kilonova.Contest) error 
 			}
 
 			go func(mossID int, lang language.Lang, mossLang string, subs []*kilonova.Submission) {
-				conn, err := moss.New(ctx)
+				conn, err := moss.New(ctx, flags.MossUserID.Value())
 				if err != nil {
 					slog.WarnContext(ctx, "Could not initialize MOSS", slog.Any("err", err))
 				}

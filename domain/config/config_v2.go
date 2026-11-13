@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -209,40 +208,6 @@ func PersistFlag(ctx context.Context, store FlagStore, name string) error {
 		return err
 	}
 	return store.SetFlag(ctx, name, val)
-}
-
-// ApplyFlagOverrides applies the per-process KN_FLAG_OVERRIDES escape hatch.
-// Overrides are never persisted, and apply in processes with no flag store at all.
-func ApplyFlagOverrides(ctx context.Context) {
-	flagMapMu.RLock()
-	defer flagMapMu.RUnlock()
-
-	for override := range strings.SplitSeq(os.Getenv("KN_FLAG_OVERRIDES"), ",") {
-		if override == "" {
-			continue
-		}
-		key, val, found := strings.Cut(override, "=")
-		if !found {
-			slog.WarnContext(ctx, "Invalid override", slog.String("override", override))
-			continue
-		}
-		flg, ok := allFlags[key]
-		if !ok {
-			slog.WarnContext(ctx, "Could not find flag", slog.String("name", key))
-			continue
-		}
-		switch f := flg.(type) {
-		case *flag[string]:
-			// Strings are a bit special since they don't like the fact that overrides may not have quotes
-			f.Update(val)
-		case configFlag:
-			if err := json.Unmarshal([]byte(val), f.getPtr()); err != nil {
-				slog.WarnContext(ctx, "Invalid flag override", slog.Any("err", err), slog.String("key", key))
-			}
-		default:
-			slog.WarnContext(ctx, "Unknown flag type")
-		}
-	}
 }
 
 var onFlagUpdate = func(string) {}

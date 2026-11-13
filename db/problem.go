@@ -10,7 +10,6 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
@@ -169,7 +168,7 @@ func (s *DB) CreateProblem(ctx context.Context, p *kilonova.Problem, authorID in
 		p.TimeLimit = 1 // 1s
 	}
 	if p.SourceSize == 0 {
-		p.SourceSize = flags.DefaultSourceSize.Value()
+		return kilonova.Statusf(400, "Source size must be set")
 	}
 	if p.TaskType == kilonova.TaskTypeNone {
 		p.TaskType = kilonova.TaskTypeBatch

@@ -9,8 +9,6 @@ import (
 	"log/slog"
 	"net"
 	"strings"
-
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
 var (
@@ -46,9 +44,10 @@ type File struct {
 }
 
 type Conn struct {
-	ctx  context.Context
-	conn net.Conn
-	sc   *bufio.Scanner
+	ctx    context.Context
+	conn   net.Conn
+	sc     *bufio.Scanner
+	userID int
 }
 
 func (m *Conn) recvLine() (string, error) {
@@ -68,7 +67,7 @@ func NewFile(langName string, filename string, data []byte) *File {
 }
 
 func (m *Conn) Process(conf *Options) (string, error) {
-	if _, err := fmt.Fprintf(m.conn, "moss %d\n", flags.MossUserID.Value()); err != nil {
+	if _, err := fmt.Fprintf(m.conn, "moss %d\n", m.userID); err != nil {
 		return "", err
 	}
 	if _, err := fmt.Fprintf(m.conn, "directory 0\n"); err != nil {
@@ -132,13 +131,13 @@ func (m *Conn) Close() error {
 	return err
 }
 
-func New(ctx context.Context) (*Conn, error) {
-	if flags.MossUserID.Value() <= 0 {
+func New(ctx context.Context, userID int) (*Conn, error) {
+	if userID <= 0 {
 		return nil, ErrUnauthed
 	}
 	conn, err := defaultDialer.DialContext(ctx, "tcp", serverAddr)
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{ctx, conn, bufio.NewScanner(conn)}, nil
+	return &Conn{ctx, conn, bufio.NewScanner(conn), userID}, nil
 }

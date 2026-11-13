@@ -59,12 +59,8 @@ On startup, when the flag table is empty and the file named by `KN_FLAGS_PATH` e
 - **WHEN** the container has no flags file at all
 - **THEN** startup proceeds on compiled-in defaults with no error
 
-### Requirement: Per-process flag overrides still work without the database
-The `KN_FLAG_OVERRIDES` variable SHALL continue to override flag values for a single process. Overrides SHALL be applied after values are loaded from the store, SHALL NOT be persisted back to it, and SHALL apply even in a process that has no database connection. A process that consumes no flags — `kn grader-serve` — SHALL start and run correctly with no flag store and no database.
-
-#### Scenario: Override beats the stored value
-- **WHEN** the store holds `behavior.db.log_sql = false` and the process starts with `KN_FLAG_OVERRIDES=behavior.db.log_sql=true`
-- **THEN** SQL logging is on for that process only, and the stored value is unchanged
+### Requirement: Processes without flags run without the database
+There SHALL be no per-process flag override mechanism; the flag store is the only source of flag values besides compiled-in defaults. A process that consumes no flags — `kn grader-serve` — SHALL start and run correctly with no flag store and no database.
 
 #### Scenario: Grader needs no flag store
 - **WHEN** `kn grader-serve` starts with no `KN_DB_DSN` set

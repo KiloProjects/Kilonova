@@ -200,12 +200,18 @@ type TestProcessParams struct {
 	// Also when uploading ICPC archive decide if importing as ICPC or not
 	FirstImport bool
 
+	// MaxMemoryKB caps the memory limit an archive's properties may set.
+	MaxMemoryKB int
+
 	// MergeTests bool
 }
 
 func ProcessTestArchive(ctx context.Context, pb *kilonova.Problem, ar fs.FS, base *sudoapi.BaseAPI, params *TestProcessParams) error {
 	if params.Requestor == nil {
 		return kilonova.Statusf(400, "There must be a requestor")
+	}
+	if params.MaxMemoryKB <= 0 {
+		return kilonova.Statusf(500, "Maximum memory limit must be set")
 	}
 
 	aCtx := NewArchiveCtx(ctx, params, ar)

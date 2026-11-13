@@ -69,7 +69,7 @@ The mailer SHALL be enabled if and only if `KN_SMTP_HOST` is non-empty. `KN_SMTP
 - **THEN** startup logs a warning that the mailer could not be initialised and continues with mail disabled
 
 ### Requirement: Admin-editable instance settings are runtime flags
-The default UI language, the per-test maximum memory cap and the banned hot-problem list SHALL be flags `frontend.default_language` (string, default `en`), `eval.test_max_mem_kb` (int, default `655360`) and `frontend.banned_hot_problems` (list of ints, default empty), persisted in the database-backed flag store defined by the `flag-store` capability and overridable per process through `KN_FLAG_OVERRIDES`. `POST /admin/updateConfig` SHALL update these flags and SHALL NOT accept `num_workers` or `global_max_mem`. The default language SHALL be validated at read time: a value other than `en` or `ro` SHALL behave as `en` with a logged warning, never a panic.
+The default UI language, the per-test maximum memory cap and the banned hot-problem list SHALL be flags `frontend.default_language` (string, default `en`), `eval.test_max_mem_kb` (int, default `655360`) and `frontend.banned_hot_problems` (list of ints, default empty), persisted in the database-backed flag store defined by the `flag-store` capability. `POST /admin/updateConfig` SHALL update these flags and SHALL NOT accept `num_workers` or `global_max_mem`. The default language SHALL be validated at read time: a value other than `en` or `ro` SHALL behave as `en` with a logged warning, never a panic.
 
 #### Scenario: Admin changes the default language
 - **WHEN** an admin submits `default_lang=ro` to `/admin/updateConfig`

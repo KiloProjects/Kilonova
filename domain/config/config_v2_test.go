@@ -24,7 +24,7 @@ func (m *memStore) SetFlag(_ context.Context, key string, value json.RawMessage)
 }
 
 // Guards the list-typed flags (frontend.banned_hot_problems) through the store
-// persistence path and the KN_FLAG_OVERRIDES path.
+// persistence path.
 func TestSliceFlagRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	f := GenFlag("test.slice", []int{}, "test slice flag")
@@ -42,12 +42,6 @@ func TestSliceFlagRoundTrip(t *testing.T) {
 	}
 	if got := f.Value(); !slices.Equal(got, []int{1, 2}) {
 		t.Fatalf("after load: got %v, want [1 2]", got)
-	}
-
-	t.Setenv("KN_FLAG_OVERRIDES", "test.slice=[3]")
-	ApplyFlagOverrides(ctx)
-	if got := f.Value(); !slices.Equal(got, []int{3}) {
-		t.Fatalf("after override: got %v, want [3]", got)
 	}
 }
 

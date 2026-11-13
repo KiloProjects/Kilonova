@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 	"github.com/KiloProjects/kilonova/domain/user"
+	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/util/slicealg"
 )
 
@@ -278,6 +279,9 @@ func (s *BaseAPI) SolvedProblems(ctx context.Context, user *kilonova.UserBrief, 
 }
 
 func (s *BaseAPI) insertProblem(ctx context.Context, problem *kilonova.Problem, authorID int) (int, error) {
+	if problem.SourceSize == 0 {
+		problem.SourceSize = flags.DefaultSourceSize.Value()
+	}
 	err := s.db.CreateProblem(ctx, problem, authorID)
 	if err != nil {
 		return -1, fmt.Errorf("couldn't create problem: %w", err)

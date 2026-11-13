@@ -83,11 +83,6 @@ func main() {
 			kilonova.SetDebugMode(debugMode)
 			config.SetLogToFile(logToFile)
 			kilonova.SetHostPrefix(hostPrefix)
-
-			// Stored flags live in the database, so they can only be loaded once the
-			// pool exists (initBase). Overrides need nothing and apply everywhere,
-			// including commands that never open a database.
-			config.ApplyFlagOverrides(ctx)
 			return ctx, nil
 		},
 		Action: func(ctx context.Context, command *cli.Command) error {

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -168,8 +167,9 @@ func (s *DB) RemoveSession(ctx context.Context, sess string) error {
 	return err
 }
 
-func (s *DB) RemoveOldSessions(ctx context.Context, userID int) ([]string, error) {
-	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, flags.MaxSessionCount.Value())
+// RemoveOldSessions deletes all but the [keep] most recent sessions of the user.
+func (s *DB) RemoveOldSessions(ctx context.Context, userID int, keep int) ([]string, error) {
+	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, keep)
 	return pgx.CollectRows(q, pgx.RowTo[string])
 }
 
