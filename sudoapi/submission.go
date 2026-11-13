@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/KiloProjects/kilonova"
@@ -347,7 +348,8 @@ func (s *BaseAPI) CreateSubmission(ctx context.Context, author *kilonova.UserFul
 	if lang.InternalName() == "lean" {
 		sourceSizeMultiplier = 10
 	}
-	if len(code) > problem.SourceSize*sourceSizeMultiplier { // Maximum admitted by problem
+	sizeWhitelisted := slices.ContainsFunc(flags.SourceSizeWhitelist.Value(), func(name string) bool { return strings.EqualFold(name, author.Name) })
+	if !sizeWhitelisted && len(code) > problem.SourceSize*sourceSizeMultiplier { // Maximum admitted by problem
 		return -1, Statusf(400, "Code exceeds %d characters", problem.SourceSize*sourceSizeMultiplier)
 	}
 	if !s.IsProblemVisible(author.Brief(), problem) {

@@ -39,6 +39,7 @@ type PanelParams struct {
 	StringFlags   []config.Flag[string]
 	IntFlags      []config.Flag[int]
 	IntArrayFlags []config.Flag[[]int]
+	StrArrayFlags []config.Flag[[]string]
 }
 
 // Panel is the admin panel: role management and the runtime flags editor.
@@ -85,7 +86,10 @@ func Panel(ctx context.Context, params PanelParams) Node {
 				return valueFlag(f.HumanName(), f.InternalName(), strconv.Itoa(f.Value()), Type("number"))
 			})),
 			flagSection(ctx, "intArrayFlags", len(params.IntArrayFlags), Map(params.IntArrayFlags, func(f config.Flag[[]int]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), intList(f.Value()), Type("text"), Pattern("([0-9]+,?)+"))
+				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Value()), Type("text"))
+			})),
+			flagSection(ctx, "strArrayFlags", len(params.StrArrayFlags), Map(params.StrArrayFlags, func(f config.Flag[[]string]) Node {
+				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Value()), Type("text"))
 			})),
 			Button(Type("submit"), Class("btn btn-blue"), ui.T(ctx, "button.update")),
 		),
@@ -112,12 +116,13 @@ func valueFlag(human, name, value string, inputAttrs ...Node) Node {
 	)
 }
 
-func intList(ids []int) string {
-	s := make([]string, len(ids))
-	for i, id := range ids {
-		s[i] = strconv.Itoa(id)
+// jsonList renders a list flag as its JSON array, never "null".
+func jsonList[T any](vals []T) string {
+	if vals == nil {
+		vals = []T{}
 	}
-	return strings.Join(s, ",")
+	b, _ := json.Marshal(vals)
+	return string(b)
 }
 
 // UserGen is the admin account generator form.

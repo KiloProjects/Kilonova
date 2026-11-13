@@ -41,6 +41,7 @@ func (rt *Web) adminPanel(w http.ResponseWriter, r *http.Request) {
 			StringFlags:   config.GetFlags[string](),
 			IntFlags:      config.GetFlags[int](),
 			IntArrayFlags: config.GetFlags[[]int](),
+			StrArrayFlags: config.GetFlags[[]string](),
 		})},
 	})
 }

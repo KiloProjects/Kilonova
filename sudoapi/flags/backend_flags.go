@@ -62,6 +62,8 @@ var (
 	WaitingSubLimit    = config.GenFlag[int]("behavior.submissions.user_max_waiting", 5, "Maximum number of unfinished submissions in the eval queue (for a single user)")
 	TotalSubLimit      = config.GenFlag[int]("behavior.submissions.user_max_minute", 20, "Maximum number of submissions uploaded per minute (for a single user with verified email)")
 	UnverifiedSubLimit = config.GenFlag[int]("behavior.submissions.user_max_unverified", 5, "Maximum number of submissions uploaded per minute (for a single user with unverified email)")
+
+	SourceSizeWhitelist = config.GenFlag("behavior.submissions.source_size_whitelist", []string{}, "Usernames that can bypass the problem source code size limit")
 )
 
 var TestMaxMemKB = config.GenFlag("eval.test_max_mem_kb", 1048576, "Maximum memory limit (KB) a problem may request per test")

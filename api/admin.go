@@ -101,10 +101,11 @@ func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
 
 func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 	var args struct {
-		BoolFlags    map[string]bool   `json:"bool_flags"`
-		StringFlags  map[string]string `json:"string_flags"`
-		IntFlags     map[string]int    `json:"int_flags"`
-		IntListFlags map[string][]int  `json:"int_array_flags"`
+		BoolFlags    map[string]bool     `json:"bool_flags"`
+		StringFlags  map[string]string   `json:"string_flags"`
+		IntFlags     map[string]int      `json:"int_flags"`
+		IntListFlags map[string][]int    `json:"int_array_flags"`
+		StrListFlags map[string][]string `json:"str_array_flags"`
 	}
 	if err := parseJSONBody(r, &args); err != nil {
 		statusError(w, err)
@@ -136,6 +137,14 @@ func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 	}
 	for k, v := range args.IntListFlags {
 		flg, ok := config.GetFlag[[]int](k)
+		if !ok {
+			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
+			continue
+		}
+		flg.Update(v)
+	}
+	for k, v := range args.StrListFlags {
+		flg, ok := config.GetFlag[[]string](k)
 		if !ok {
 			slog.WarnContext(r.Context(), "Flag not found", slog.String("name", k))
 			continue

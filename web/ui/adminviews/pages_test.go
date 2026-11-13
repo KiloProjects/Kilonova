@@ -21,9 +21,10 @@ func TestPanel(t *testing.T) {
 			AuthedUserID:  7,
 			BoolFlags:     []config.Flag[bool]{config.GenFlag("test.adminviews.bool", true, "Bool <b>")},
 			IntArrayFlags: []config.Flag[[]int]{config.GenFlag("test.adminviews.ints", []int{1, 2}, "Ints")},
+			StrArrayFlags: []config.Flag[[]string]{config.GenFlag("test.adminviews.strs", []string{`a,"b`}, "Strs")},
 		}))
 		must(t, got, `data-name="test.adminviews.bool"`, `data-org_value="true"`, "checked", "Bool &lt;b&gt;",
-			`data-org_value="1,2"`, `value="1,2"`, `user.id != 1 && 7 == 1`, `id="stringFlagsDiv"`, "N/A", "`/user/byName/${user}`")
+			`data-org_value="[1,2]"`, `value="[1,2]"`, `value="[&#34;a,\&#34;b&#34;]"`, `user.id != 1 && 7 == 1`, `id="stringFlagsDiv"`, "N/A", "`/user/byName/${user}`")
 	})
 }
 
