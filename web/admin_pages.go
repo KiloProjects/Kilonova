@@ -95,6 +95,14 @@ func (rt *Web) contestGenRun(w http.ResponseWriter, r *http.Request) {
 		rt.statusPage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if teamsCSV, ok := files["teamsOut.csv"]; ok {
+		// Accounts already exist at this point, so a missing typst only costs the PDF, not the archive.
+		if pdf, err := contestgen.PrintablePDF(ctx, teamsCSV); err != nil {
+			auditLog.WarnContext(ctx, "Could not generate printable PDF", slog.Any("err", err))
+		} else {
+			files["contestants.pdf"] = pdf
+		}
+	}
 	files["generator.log"] = logBuf.Bytes()
 
 	w.Header().Set("Content-Type", "application/zip")
@@ -113,6 +121,30 @@ func (rt *Web) contestGenRun(w http.ResponseWriter, r *http.Request) {
 	if err := zw.Close(); err != nil {
 		slog.ErrorContext(ctx, "Could not write contest generation archive", slog.Any("err", err))
 	}
+}
+
+// contestGenPDF turns an uploaded teamsOut.csv into a printable credentials PDF.
+func (rt *Web) contestGenPDF(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 20<<20)
+	f, _, err := r.FormFile("csv")
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Missing teams CSV")
+		return
+	}
+	defer f.Close()
+	raw, err := io.ReadAll(f)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusBadRequest, "Could not read teams CSV")
+		return
+	}
+	pdf, err := contestgen.PrintablePDF(r.Context(), raw)
+	if err != nil {
+		rt.statusPage(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", `attachment; filename="contestants-`+time.Now().Format("2006-01-02T15-04-05")+`.pdf"`)
+	w.Write(pdf)
 }
 
 func (rt *Web) auditLog() http.HandlerFunc {

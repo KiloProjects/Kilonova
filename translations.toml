@@ -134,6 +134,10 @@ ro = "Adăugare"
 en = "Delete"
 ro = "Ștergere"
 
+[button.remove]
+en = "Remove"
+ro = "Elimină"
+
 [button.upload]
 en = "Upload"
 ro = "Încărcare"
@@ -3154,8 +3158,8 @@ en = "Generate contest accounts"
 ro = "Generare conturi de concurs"
 
 [contest_gen.description]
-en = "Upload a profiles bundle (the same JSON file used by kn contest-utils). The accounts are created and a zip with the CSV, the JSON and the generation log is downloaded. A dry run only returns the requests that would be sent."
-ro = "Încarcă un fișier de profiluri (același JSON folosit de kn contest-utils). Conturile sunt create și se descarcă o arhivă zip cu CSV-ul, JSON-ul și jurnalul generării. O simulare returnează doar cererile care ar fi trimise."
+en = "Upload a profiles bundle (the same JSON file used by kn contest-utils). The accounts are created and a zip with the CSV, the JSON and the generation log is downloaded. A printable PDF with the credentials is also included. A dry run only returns the requests that would be sent."
+ro = "Încarcă un fișier de profiluri (același JSON folosit de kn contest-utils). Conturile sunt create și se descarcă o arhivă zip cu CSV-ul, JSON-ul și jurnalul generării. Este inclus și un PDF printabil cu credențialele. O simulare returnează doar cererile care ar fi trimise."
 
 [contest_gen.bundle]
 en = "Profiles bundle"
@@ -3168,6 +3172,22 @@ ro = "Simulare (nu crea conturi)"
 [contest_gen.submit]
 en = "Generate"
 ro = "Generează"
+
+[contest_gen.pdf_title]
+en = "Printable credentials"
+ro = "Credențiale printabile"
+
+[contest_gen.pdf_description]
+en = "Upload the teamsOut.csv from a generation archive to get a printable PDF with every account's username and password."
+ro = "Încarcă fișierul teamsOut.csv din arhiva generată pentru a obține un PDF printabil cu numele de utilizator și parola fiecărui cont."
+
+[contest_gen.pdf_csv]
+en = "Teams CSV"
+ro = "CSV cu echipe"
+
+[contest_gen.pdf_submit]
+en = "Generate PDF"
+ro = "Generează PDF"
 
 [user_gen.title]
 en = "Generate user"

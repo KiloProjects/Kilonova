@@ -344,5 +344,14 @@ func ContestGen(ctx context.Context) Node {
 			),
 			Div(Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "contest_gen.submit"))),
 		),
+		H2(Class("mt-4"), ui.T(ctx, "contest_gen.pdf_title")),
+		P(Class("text-muted"), ui.T(ctx, "contest_gen.pdf_description")),
+		Form(Method("post"), Action("/admin/contest_gen/pdf"), EncType("multipart/form-data"),
+			Label(Class("block my-2"),
+				Span(Class("form-label"), ui.T(ctx, "contest_gen.pdf_csv"), Text(":")), Text(" "),
+				Input(Class("form-input"), Type("file"), Name("csv"), Accept(".csv,text/csv"), Required()),
+			),
+			Div(Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "contest_gen.pdf_submit"))),
+		),
 	)
 }

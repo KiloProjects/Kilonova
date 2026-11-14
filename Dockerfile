@@ -65,6 +65,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN curl -fsSL -o /tmp/GeoLite2-City.mmdb "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
 
+# Typst, for the printable contest credentials PDF (contestgen.PrintablePDF) on the platform.
+FROM debian:trixie-slim AS typst-downloader
+
+ARG TYPST_VERSION=0.15.1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+         amd64) typst_target=x86_64-unknown-linux-musl ;; \
+         arm64) typst_target=aarch64-unknown-linux-musl ;; \
+         *) echo "unsupported architecture $arch" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${typst_target}.tar.xz" \
+        | tar -xJ -C /usr/local/bin --strip-components=1 "typst-${typst_target}/typst"
+
 # ---------------------------------------------------------------------------
 # Toolchains for the grader, downloaded rather than apt-installed.
 # ---------------------------------------------------------------------------
@@ -210,6 +228,7 @@ RUN mkdir -p /var/lib/kilonova/data
 
 COPY --from=builder /out/kn /usr/local/bin/kn
 COPY --from=build_geo /tmp/GeoLite2-City.mmdb /usr/share/GeoIP/GeoLite2-City.mmdb
+COPY --from=typst-downloader /usr/local/bin/typst /usr/local/bin/typst
 
 ENV KN_DATA_DIR=/var/lib/kilonova/data \
     KN_LISTEN=0.0.0.0:8070 \
