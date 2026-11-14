@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/KiloProjects/kilonova/web/ui/uitest"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 )
 
 var ctx = context.WithValue(context.Background(), util.LangKey, "en")
@@ -70,8 +71,12 @@ func TestGeneral(t *testing.T) {
 
 func TestAccess(t *testing.T) {
 	pb := problem()
-	got := uitest.Render(t, Access(ctx, pb, topbar(pb, "access", -1)))
-	uitest.Contains(t, got, `id="editors_list"`, `const problem_id = 7;`)
+	got := uitest.Render(t, Access(ctx, AccessParams{
+		Problem: pb, Topbar: topbar(pb, "access", -1), AuthedUserID: 2,
+		Editors: []*kilonova.UserBrief{{ID: 2, Name: "me"}, {ID: 9, Name: "other"}},
+	}))
+	uitest.Contains(t, got, `id="editors_list"`, `id="viewers_list"`, `const problem_id = 7;`, `onclick="stripAccess(9)"`)
+	require.NotContains(t, got, "stripAccess(2)")
 }
 
 func TestTests(t *testing.T) {

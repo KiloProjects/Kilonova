@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"strconv"
-	"strings"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/config"
@@ -22,8 +21,6 @@ import (
 var (
 	//go:embed scripts/roles.js
 	rolesJS string
-	//go:embed scripts/users.js
-	usersJS string
 	//go:embed scripts/flags.js
 	flagsJS string
 	//go:embed scripts/user_gen.js
@@ -34,6 +31,8 @@ var (
 
 type PanelParams struct {
 	AuthedUserID int
+	Admins       []*kilonova.UserBrief
+	Proposers    []*kilonova.UserBrief
 
 	BoolFlags     []config.Flag[bool]
 	StringFlags   []config.Flag[string]
@@ -44,8 +43,15 @@ type PanelParams struct {
 
 // Panel is the admin panel: role management and the runtime flags editor.
 func Panel(ctx context.Context, params PanelParams) Node {
-	loadingGroup := func(id string) Node {
-		return Div(ID(id), Class("block list-group mb-2"), Div(Class("list-group-head"), ui.T(ctx, "loading")))
+	// Only the root admin (ID 1) can strip roles, and never their own.
+	// Admins are always proposers (SetProposer rejects them), so they can't be removed from the proposers list.
+	remove := func(fn string) func(u *kilonova.UserBrief) Node {
+		return func(u *kilonova.UserBrief) Node {
+			if params.AuthedUserID != 1 || u.ID == 1 || (fn == "setProposer" && u.Admin) {
+				return nil
+			}
+			return ui.RemoveUserButton(ctx, fn+"("+strconv.Itoa(u.ID)+", false)")
+		}
 	}
 	return Group{
 		H1(ui.T(ctx, "panel.admin")),
@@ -61,13 +67,11 @@ func Panel(ctx context.Context, params PanelParams) Node {
 			),
 		),
 		Script(Raw(rolesJS)),
-		Div(Class("segment-panel"),
-			H2(Class("text-2xl"), ui.T(ctx, "admins"), Text(":")),
-			loadingGroup("admin-group"),
-			H2(Class("text-2xl"), ui.T(ctx, "proposers"), Text(":")),
-			loadingGroup("proposer-group"),
+		// role_lists is re-fetched with htmx after a role change; the morph swap keeps <details> open state.
+		Div(ID("role_lists"), Class("segment-panel"),
+			ui.UserList(ctx, ui.UserListParams{ID: "admin-group", Title: ui.T(ctx, "admins"), Users: params.Admins, Action: remove("setAdmin")}),
+			ui.UserList(ctx, ui.UserListParams{ID: "proposer-group", Title: ui.T(ctx, "proposers"), Users: params.Proposers, Action: remove("setProposer")}),
 		),
-		Script(Raw(strings.Replace(usersJS, "AUTHED_USER_ID", strconv.Itoa(params.AuthedUserID), 1))),
 		Form(ID("flagsForm"), Class("segment-panel"), AutoComplete("off"),
 			H2(Class("text-2xl"), ui.T(ctx, "config.title")),
 			flagSection(ctx, "boolFlags", len(params.BoolFlags), Map(params.BoolFlags, func(f config.Flag[bool]) Node {

@@ -237,39 +237,7 @@ async function addEditor() {
         await loadView();
     }
 
-    async function loadContest() {
-        const res = await bundled.getCall(` + "`" + `/contest/${contest_id}/` + "`" + `, {});
-        if (res.status === "error") {
-            bundled.apiToast(res)
-            return
-        }
-        return res.data
-    }
-
-    async function loadUsers(users, id) {
-        //document.getElementById(id).innerHTML = ` + "`" + `<div class="list-group-head">${bundled.getText("loading")}</div>` + "`" + `
-        let outhtml = ""
-        if (users.length == 0) {
-            outhtml += ` + "`" + `<div class="list-group-head">No users</div>` + "`" + `
-        }
-        for (let user of users) {
-            outhtml += ` + "`" + `
-            <div class="list-group-item flex justify-between items-center">
-                <a href="/profile/${user.name}">
-                    <img class="rounded-sm inline-block mr-2" src="/profile/${user.name}/avatar?s=32" width="32" height="32" alt="Avatar"/>
-                    ${user.name}
-                </a>
-                ${user.id != window.platform_info.user_id ? ` + "`" + `<span style='cursor: pointer;' onclick='stripAccess(${user.id})'>X</span>` + "`" + ` : ''}
-            </div>` + "`" + `
-        }
-        document.getElementById(id).innerHTML = outhtml
-    }
-
     async function loadView() {
-        const data = await loadContest();
-        loadUsers(data.editors, 'editors_list')
-        loadUsers(data.testers, 'testers_list')
+        await htmx.ajax("GET", location.href, {target: "#access_lists", select: "#access_lists", swap: "morph"});
     }
-
-    document.addEventListener("DOMContentLoaded", () => loadView());
 `

@@ -21,10 +21,11 @@ type EditParams struct {
 	Problems    []*kilonova.ScoredProblem
 	Invitations []*kilonova.ContestInvitation
 	// Inviters maps invitation creator IDs to users; missing entries render as "-".
-	Inviters   map[int]*kilonova.UserBrief
-	MOSS       []*kilonova.MOSSSubmission
-	IsAdmin    bool
-	IsProposer bool
+	Inviters     map[int]*kilonova.UserBrief
+	MOSS         []*kilonova.MOSSSubmission
+	IsAdmin      bool
+	IsProposer   bool
+	AuthedUserID int
 }
 
 // Edit is the contest management page.
@@ -36,7 +37,7 @@ func Edit(ctx context.Context, p EditParams) Node {
 			Div(Class("page-content-full-wrapper"),
 				settingsForm(ctx, p),
 				problemsForm(ctx, p.Problems),
-				accessControl(ctx),
+				accessControl(ctx, c, p.AuthedUserID),
 				descriptionForm(ctx, c),
 				invitations(ctx, p.Invitations, p.Inviters),
 				If(p.IsProposer, pblistForm(ctx)),
@@ -66,17 +67,14 @@ func problemsForm(ctx context.Context, pbs []*kilonova.ScoredProblem) Node {
 	)
 }
 
-// accessControl lists editors and testers; the lists are filled in by editAccessScript.
-func accessControl(ctx context.Context) Node {
-	loading := func(id string) Node {
-		return Div(ID(id), Class("list-group mb-2"), Div(Class("list-group-head"), ui.T(ctx, "loading")))
-	}
+// accessControl lists editors and testers.
+func accessControl(ctx context.Context, c *kilonova.Contest, authedUserID int) Node {
 	return Div(Class("segment-panel"),
 		H2(ui.T(ctx, "header.contest.access_control")),
-		H3(ui.T(ctx, "editors"), Text(":")),
-		loading("editors_list"),
-		H3(ui.T(ctx, "testers"), Text(":")),
-		loading("testers_list"),
+		Div(ID("access_lists"),
+			ui.UserList(ctx, ui.UserListParams{ID: "editors_list", Title: ui.T(ctx, "editors"), Users: c.Editors, Open: true, Action: ui.StripAccessAction(ctx, authedUserID)}),
+			ui.UserList(ctx, ui.UserListParams{ID: "testers_list", Title: ui.T(ctx, "testers"), Users: c.Testers, Open: true, Action: ui.StripAccessAction(ctx, authedUserID)}),
+		),
 		Div(Class("segment-panel"),
 			H2(ui.T(ctx, "add_user")),
 			Label(Class("block"),

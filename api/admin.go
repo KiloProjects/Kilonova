@@ -77,31 +77,6 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 	returnData(w, "Succesfully removed proposer")
 }
 
-func (s *API) getAllUsers(w http.ResponseWriter, r *http.Request) {
-	var query kilonova.UserFilter
-	if err := parseRequest(r, &query); err != nil {
-		errorData(w, "Invalid request parameters", 400)
-		return
-	}
-	rez, err := s.base.UsersBrief(r.Context(), query)
-	if err != nil {
-		statusError(w, err)
-		return
-	}
-
-	cnt, err := s.base.CountUsers(r.Context(), query)
-	if err != nil {
-		statusError(w, err)
-		return
-	}
-
-	returnData(w, struct {
-		Users []*kilonova.UserBrief `json:"users"`
-
-		Count int `json:"total_count"`
-	}{Users: rez, Count: cnt})
-}
-
 func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
 	var args struct {
 		BoolFlags    map[string]bool     `json:"bool_flags"`

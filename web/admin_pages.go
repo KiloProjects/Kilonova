@@ -33,10 +33,20 @@ import (
 )
 
 func (rt *Web) adminPanel(w http.ResponseWriter, r *http.Request) {
+	admins, err := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{Admin: new(true)})
+	if err != nil {
+		slog.WarnContext(r.Context(), "Couldn't get admins", slog.Any("err", err))
+	}
+	proposers, err := rt.base.UsersBrief(r.Context(), kilonova.UserFilter{Proposer: new(true)})
+	if err != nil {
+		slog.WarnContext(r.Context(), "Couldn't get proposers", slog.Any("err", err))
+	}
 	rt.runLayout(w, r, &LayoutParams{
 		Title: kilonova.GetText(util.Language(r), "panel.admin"),
 		Content: g.Group{adminviews.Tabs(r.Context(), "/admin"), adminviews.Panel(r.Context(), adminviews.PanelParams{
 			AuthedUserID:  user.UserBrief(r).ID,
+			Admins:        admins,
+			Proposers:     proposers,
 			BoolFlags:     config.GetFlags[bool](),
 			StringFlags:   config.GetFlags[string](),
 			IntFlags:      config.GetFlags[int](),

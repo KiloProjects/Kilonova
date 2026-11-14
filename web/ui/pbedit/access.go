@@ -10,19 +10,24 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
-// Access is the problem's access control page. The editor and viewer lists are loaded client-side.
-func Access(ctx context.Context, pb *kilonova.Problem, topbar *problems.TopbarParams) Node {
-	loading := func(id string) Node {
-		return Div(ID(id), Class("list-group mb-2"), Div(Class("list-group-head"), ui.T(ctx, "loading")))
-	}
-	return Group{page(ctx, topbar,
+type AccessParams struct {
+	Problem      *kilonova.Problem
+	Topbar       *problems.TopbarParams
+	Editors      []*kilonova.UserBrief
+	Viewers      []*kilonova.UserBrief
+	AuthedUserID int
+}
+
+// Access is the problem's access control page.
+func Access(ctx context.Context, p AccessParams) Node {
+	return Group{page(ctx, p.Topbar,
 		Div(Class("page-content-wrapper"),
 			Div(Class("segment-panel"),
 				H2(ui.T(ctx, "header.edit.access_control")),
-				H3(ui.T(ctx, "editors"), Text(":")),
-				loading("editors_list"),
-				H3(ui.T(ctx, "viewers"), Text(":")),
-				loading("viewers_list"),
+				Div(ID("access_lists"),
+					ui.UserList(ctx, ui.UserListParams{ID: "editors_list", Title: ui.T(ctx, "editors"), Users: p.Editors, Open: true, Action: ui.StripAccessAction(ctx, p.AuthedUserID)}),
+					ui.UserList(ctx, ui.UserListParams{ID: "viewers_list", Title: ui.T(ctx, "viewers"), Users: p.Viewers, Open: true, Action: ui.StripAccessAction(ctx, p.AuthedUserID)}),
+				),
 			),
 		),
 		Aside(Class("page-sidebar"),
@@ -40,5 +45,5 @@ func Access(ctx context.Context, pb *kilonova.Problem, topbar *problems.TopbarPa
 				),
 			),
 		),
-	), script("access.js", map[string]any{"PBID": pb.ID})}
+	), script("access.js", map[string]any{"PBID": p.Problem.ID})}
 }

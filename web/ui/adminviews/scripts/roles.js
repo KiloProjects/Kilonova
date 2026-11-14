@@ -1,11 +1,14 @@
+        function refreshRoles() {
+            return htmx.ajax("GET", location.href, {target: "#role_lists", select: "#role_lists", swap: "morph"})
+        }
+
         async function setAdmin(id, set) {
             let res = await bundled.postCall("/admin/setAdmin", {id, set})
             bundled.apiToast(res)
             if (res.status == "error") {
                 return
             }
-            loadUsers({admin: true}, "admin-group", "setAdmin");
-            loadUsers({proposer: true}, "proposer-group", "setProposer");
+            await refreshRoles();
         }
 
         async function setProposer(id, set) {
@@ -14,7 +17,7 @@
             if (res.status == "error") {
                 return
             }
-            loadUsers({proposer: true}, "proposer-group", "setProposer");
+            await refreshRoles();
         }
 
         async function setFormAdmin(toSet) {

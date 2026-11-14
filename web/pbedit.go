@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/KiloProjects/kilonova"
+	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 	"github.com/KiloProjects/kilonova/web/ui/editors"
@@ -138,9 +139,23 @@ func (rt *Web) editAttachments() func(w http.ResponseWriter, r *http.Request) {
 func (rt *Web) editAccessControl() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pb := util.Problem(r)
+		editors, err := rt.base.ProblemEditors(r.Context(), pb.ID)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get problem editors", slog.Any("err", err))
+		}
+		viewers, err := rt.base.ProblemViewers(r.Context(), pb.ID)
+		if err != nil {
+			slog.WarnContext(r.Context(), "Couldn't get problem viewers", slog.Any("err", err))
+		}
 		rt.runLayout(w, r, &LayoutParams{
-			Title:   kilonova.GetText(util.Language(r), "title.edit.access_control", pb.ID, pb.Name),
-			Content: pbedit.Access(r.Context(), pb, rt.problemTopbar(r, "access", -1)),
+			Title: kilonova.GetText(util.Language(r), "title.edit.access_control", pb.ID, pb.Name),
+			Content: pbedit.Access(r.Context(), pbedit.AccessParams{
+				Problem:      pb,
+				Topbar:       rt.problemTopbar(r, "access", -1),
+				Editors:      editors,
+				Viewers:      viewers,
+				AuthedUserID: user.UserBrief(r).ID,
+			}),
 		})
 	}
 }

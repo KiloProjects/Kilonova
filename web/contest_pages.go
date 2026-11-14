@@ -201,14 +201,15 @@ func (rt *Web) contestEdit() http.HandlerFunc {
 		rt.runLayout(w, r, &LayoutParams{
 			Title: kilonova.GetText(util.Language(r), "contest_edit"),
 			Content: contests.Edit(ctx, contests.EditParams{
-				Topbar:      rt.problemTopbar(r, "contest_edit", -1),
-				Contest:     c,
-				Problems:    pbs,
-				Invitations: invitations,
-				Inviters:    inviters,
-				MOSS:        mossSubs,
-				IsAdmin:     u.IsAdmin(),
-				IsProposer:  u.IsProposer(),
+				Topbar:       rt.problemTopbar(r, "contest_edit", -1),
+				Contest:      c,
+				Problems:     pbs,
+				Invitations:  invitations,
+				Inviters:     inviters,
+				MOSS:         mossSubs,
+				IsAdmin:      u.IsAdmin(),
+				IsProposer:   u.IsProposer(),
+				AuthedUserID: u.ID,
 			}),
 		})
 	}

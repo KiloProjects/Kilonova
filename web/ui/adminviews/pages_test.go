@@ -16,15 +16,28 @@ import (
 var enCtx = uitest.Ctx("en")
 
 func TestPanel(t *testing.T) {
-	t.Run("renders flags with original values and the authed user id in the script", func(t *testing.T) {
+	t.Run("renders flags with original values and role lists", func(t *testing.T) {
 		got := uitest.Render(t, Panel(enCtx, PanelParams{
 			AuthedUserID:  7,
+			Admins:        []*kilonova.UserBrief{{ID: 1, Name: "root"}},
 			BoolFlags:     []config.Flag[bool]{config.GenFlag("test.adminviews.bool", true, "Bool <b>")},
 			IntArrayFlags: []config.Flag[[]int]{config.GenFlag("test.adminviews.ints", []int{1, 2}, "Ints")},
 			StrArrayFlags: []config.Flag[[]string]{config.GenFlag("test.adminviews.strs", []string{`a,"b`}, "Strs")},
 		}))
 		uitest.Contains(t, got, `data-name="test.adminviews.bool"`, `data-org_value="true"`, "checked", "Bool &lt;b&gt;",
-			`data-org_value="[1,2]"`, `value="[1,2]"`, `value="[&#34;a,\&#34;b&#34;]"`, `user.id != 1 && 7 == 1`, `id="stringFlagsDiv"`, "N/A", "`/user/byName/${user}`")
+			`data-org_value="[1,2]"`, `value="[1,2]"`, `value="[&#34;a,\&#34;b&#34;]"`, `id="admin-group"`, `href="/profile/root"`, `id="stringFlagsDiv"`, "N/A", "`/user/byName/${user}`")
+		require.NotContains(t, got, "setAdmin(1, false)", "only the root admin may strip roles")
+	})
+
+	t.Run("root admin can remove others but not themselves", func(t *testing.T) {
+		got := uitest.Render(t, Panel(enCtx, PanelParams{
+			AuthedUserID: 1,
+			Admins:       []*kilonova.UserBrief{{ID: 1, Name: "root"}, {ID: 5, Name: "alice", Admin: true}},
+			Proposers:    []*kilonova.UserBrief{{ID: 5, Name: "alice", Admin: true}, {ID: 6, Name: "bob", Proposer: true}},
+		}))
+		uitest.Contains(t, got, `onclick="setAdmin(5, false)"`, `onclick="setProposer(6, false)"`)
+		require.NotContains(t, got, "setAdmin(1, false)")
+		require.NotContains(t, got, "setProposer(5, false)", "admins can't lose proposer status on its own")
 	})
 }
 

@@ -202,7 +202,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.Post("/addDonation", s.addDonation)
 		r.Post("/endSubscription", s.endSubscription)
 
-		r.Get("/getAllUsers", s.getAllUsers)
 	})
 
 	r.Route("/webhook", func(r chi.Router) {
