@@ -31,7 +31,6 @@ type API struct {
 	base *sudoapi.BaseAPI
 	llm  llm.Provider // nil when the LLM integration is not configured
 
-	signupLock      sync.Mutex
 	testArchiveLock sync.Mutex
 }
 
@@ -211,7 +210,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.Mount("/captcha", s.base.CaptchaImageHandler())
 
 		r.With(s.MustBeAuthed).Post("/logout", s.logout)
-		r.With(s.MustBeVisitor).Post("/signup", s.signup)
 		r.With(s.MustBeVisitor).Post("/login", s.login)
 
 		r.With(s.MustBeAuthed).Post("/extendSession", s.extendSession)

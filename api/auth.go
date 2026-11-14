@@ -3,78 +3,7 @@ package api
 import (
 	"log/slog"
 	"net/http"
-
-	"github.com/KiloProjects/kilonova"
 )
-
-func (s *API) signup(w http.ResponseWriter, r *http.Request) {
-	s.signupLock.Lock()
-	defer s.signupLock.Unlock()
-	var auth struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Language string `json:"language"`
-		Theme    string `json:"theme"`
-
-		CaptchaID       string `json:"captcha_id"`
-		CaptchaResponse string `json:"captcha_response"`
-	}
-
-	if err := parseRequest(r, &auth); err != nil {
-		errorData(w, err, http.StatusBadRequest)
-		return
-	}
-
-	ip, ua := s.base.GetRequestInfo(r)
-	if s.base.MustSolveCaptcha(r.Context(), ip) {
-		if auth.CaptchaID == "" || auth.CaptchaResponse == "" {
-			errorData(w, struct {
-				ID  string `json:"captcha_id"`
-				Key string `json:"translation_key"`
-			}{
-				ID:  s.base.NewCaptchaID(),
-				Key: "auth.captcha.must_solve",
-			}, http.StatusPreconditionRequired)
-			return
-		}
-		if !s.base.CheckCaptcha(auth.CaptchaID, auth.CaptchaResponse) {
-			errorData(w, struct {
-				ID  string `json:"captcha_id"`
-				Key string `json:"translation_key"`
-			}{
-				ID:  s.base.NewCaptchaID(),
-				Key: "auth.captcha.invalid",
-			}, http.StatusBadRequest)
-			return
-		}
-	}
-
-	uid, status := s.base.Signup(r.Context(), auth.Email, auth.Username, auth.Password, auth.Language, kilonova.PreferredTheme(auth.Theme), ip, &ua)
-	if status != nil {
-		if s.base.CaptchaEnabled() {
-			errorData(w, struct {
-				ID   string `json:"captcha_id"`
-				Text string `json:"text"`
-			}{
-				ID:   s.base.NewCaptchaID(),
-				Text: status.Error(),
-			}, kilonova.ErrorCode(status))
-		} else {
-			statusError(w, status)
-		}
-		return
-	}
-
-	// Signup has no "keep me signed in" choice, so the first session is always a short one
-	sid, err := s.base.CreateSession(r.Context(), uid, false)
-	if err != nil {
-		statusError(w, err)
-		return
-	}
-	s.base.SetSessCookie(w, sid, false)
-	returnData(w, sid)
-}
 
 func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	var auth struct {

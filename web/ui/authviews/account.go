@@ -1,6 +1,7 @@
 package authviews
 
 import (
+	"cmp"
 	"context"
 	"net/url"
 
@@ -14,40 +15,61 @@ import (
 type SignupParams struct {
 	// Enabled is false when sign ups are turned off on the platform.
 	Enabled bool
-	// CaptchaID is empty when CAPTCHAs are disabled.
+	// CaptchaID is empty when no CAPTCHA has to be solved.
 	CaptchaID string
-	// ShowCaptcha shows the CAPTCHA up front instead of after the first failed attempt.
-	ShowCaptcha bool
+	// Email, Username and Language refill the form after a failed attempt.
+	Email, Username, Language string
+	// Back is the path to return to after signing up.
+	Back         string
+	ErrorMessage string
 }
 
 func SignupPage(ctx context.Context, params SignupParams) Node {
 	if !params.Enabled {
 		return H1(ui.T(ctx, "disabled_signup"))
 	}
-	lang := util.LanguageContext(ctx)
+	lang := cmp.Or(params.Language, util.LanguageContext(ctx))
 	field := func(key string, input Node) Node {
 		return Label(Class("block mb-2"), Span(ui.T(ctx, key)), Text(" "), input)
 	}
-	return Group{
-		ui.CenteredLayout(
-			Form(Class("segment-panel"), ID("signup_form"),
-				H1(Class("mb-4 text-center"), ui.T(ctx, "auth.signup")),
-				field("email", Input(Class("form-input w-full"), Type("email"), ID("email"), Name("email"), AutoComplete("email"), Required())),
-				field("username", Input(Class("form-input w-full"), Type("text"), ID("name"), Name("username"), MinLength("3"), MaxLength("24"), AutoComplete("username"), Required())),
-				field("password", Input(Class("form-input w-full"), Type("password"), ID("pwd"), Name("password"), MinLength("6"), MaxLength("72"), AutoComplete("new-password"), Required())),
-				field("passwordCheck", Input(Class("form-input w-full"), Type("password"), ID("pwd_check"), Name("pwd_check"), MinLength("6"), MaxLength("72"), AutoComplete("new-password"), Required())),
-				field("displayLang", Select(ID("langSelect"), Name("langSelect"), Class("form-select w-full"),
-					Option(Value("ro"), If(lang == "ro", Selected()), Text("🇷🇴 Română")),
-					Option(Value("en"), If(lang == "en", Selected()), Text("🇬🇧 English")),
-				)),
-				captcha(ctx, params.CaptchaID, !params.ShowCaptcha),
-				ui.SubmitButton(Class("block mb-3"), ui.T(ctx, "auth.signup")),
-				P(Class("text-gray-500 dark:text-gray-300"), Text(" "), ui.TRaw(ctx, "loginReminder")),
-			),
+	return ui.CenteredLayout(
+		Form(Class("segment-panel"), ID("signup_form"), Method("POST"), Action("/signup"),
+			H1(Class("mb-4 text-center"), ui.T(ctx, "auth.signup")),
+			If(params.ErrorMessage != "", P(Class("text-red-500"), Text(params.ErrorMessage))),
+			If(params.Back != "", Input(Type("hidden"), Name("back"), Value(params.Back))),
+			field("email", Input(Class("form-input w-full"), Type("email"), ID("email"), Name("email"), Value(params.Email), AutoComplete("email"), Required())),
+			field("username", Input(Class("form-input w-full"), Type("text"), ID("name"), Name("username"), Value(params.Username), MinLength("3"), MaxLength("24"), AutoComplete("username"), Required())),
+			field("password", Input(Class("form-input w-full"), Type("password"), ID("pwd"), Name("password"), MinLength("6"), MaxLength("72"), AutoComplete("new-password"), Required())),
+			field("passwordCheck", Input(Class("form-input w-full"), Type("password"), ID("pwd_check"), Name("password_confirm"), MinLength("6"), MaxLength("72"), AutoComplete("new-password"), Required())),
+			field("displayLang", Select(ID("langSelect"), Name("language"), Class("form-select w-full"),
+				Option(Value("ro"), If(lang == "ro", Selected()), Text("🇷🇴 Română")),
+				Option(Value("en"), If(lang == "en", Selected()), Text("🇬🇧 English")),
+			)),
+			Iff(params.CaptchaID != "", func() Node { return captcha(ctx, params.CaptchaID) }),
+			ui.SubmitButton(Class("block mb-3"), ui.T(ctx, "auth.signup")),
+			P(Class("text-gray-500 dark:text-gray-300"), Text(" "), ui.TRaw(ctx, "loginReminder")),
 		),
 		Script(Raw(signupJS)),
-	}
+	)
 }
+
+// signupJS colours the password fields as they are typed; the server checks the match either way.
+const signupJS = `
+{
+	const pwd = document.querySelector("#signup_form #pwd")
+	const pwdCheck = document.querySelector("#signup_form #pwd_check")
+	function updateCheck() {
+		const filled = pwd.value != "" && pwdCheck.value != ""
+		const same = pwd.value === pwdCheck.value
+		for (const el of [pwd, pwdCheck]) {
+			el.classList.toggle("is-valid", filled && same)
+			el.classList.toggle("is-invalid", filled && !same)
+		}
+	}
+	pwd.addEventListener("focusout", updateCheck)
+	pwdCheck.addEventListener("keyup", updateCheck)
+}
+`
 
 // ForgotPasswordPage is the form asking for a password reset email. sent replaces the form with the confirmation.
 func ForgotPasswordPage(ctx context.Context, captchaID, email, errorMessage string, sent bool) Node {
@@ -65,7 +87,7 @@ func ForgotPasswordPage(ctx context.Context, captchaID, email, errorMessage stri
 				Span(Class("form-label"), ui.T(ctx, "email")), Text(" "),
 				Input(Class("form-input w-full"), Type("email"), ID("pwd_email"), Name("email"), Value(email), Required()),
 			),
-			Iff(captchaID != "", func() Node { return captcha(ctx, captchaID, false) }),
+			Iff(captchaID != "", func() Node { return captcha(ctx, captchaID) }),
 			ui.SubmitButton(Class("block"), ui.T(ctx, "recover")),
 		),
 	)
@@ -113,13 +135,10 @@ func EmailVerified(ctx context.Context, name string) Node {
 	}
 }
 
-// captcha renders the CAPTCHA box, or a stub defining the same JS functions when id is empty.
-func captcha(ctx context.Context, id string, hidden bool) Node {
-	if id == "" {
-		return Script(Raw(noCaptchaJS))
-	}
+// captcha renders the CAPTCHA box; the script only reloads the image.
+func captcha(ctx context.Context, id string) Node {
 	return Group{
-		Div(ID("captcha_container"), Class("segment-panel"), If(hidden, Style("display: none;")),
+		Div(ID("captcha_container"), Class("segment-panel"),
 			P(
 				ui.T(ctx, "auth.captcha.title"), Text(":"), Br(),
 				Img(ID("captcha_img"), Class("rounded-sm"), Src("/api/auth/captcha/"+id+".png"), Alt("Captcha image"), Width("240"), Height("80"), Style("background-color: white;")),
@@ -136,88 +155,7 @@ func captcha(ctx context.Context, id string, hidden bool) Node {
 }
 
 const captchaJS = `
-function reloadCaptcha() {
-	document.getElementById("captcha_img").src = ` + "`/api/auth/captcha/${document.getElementById(\"captcha_id\").value}.png?reload=${bundled.dayjs().valueOf()}`" + `
-}
-document.getElementById("captcha_reload_btn").addEventListener("click", reloadCaptcha)
-function resetCaptcha(newID) {
-	document.getElementById("captcha_container").style.display = "block"
-	document.getElementById("captcha_id").value = newID
-	document.getElementById("captcha_response").value = ""
-	reloadCaptcha()
-}
-function getCaptchaData() {
-	return {captcha_id: document.getElementById("captcha_id").value, captcha_response: document.getElementById("captcha_response").value}
-}
-`
-
-const noCaptchaJS = `
-function resetCaptcha() {
-	// CAPTCHA module not loaded in, prompt a page reload
-	window.location.reload();
-}
-function getCaptchaData() {
-	return {captcha_id: "", captcha_response: ""}
-}
-`
-
-// handleCaptchaErrorJS is shared by the forms that may answer with a CAPTCHA challenge.
-const handleCaptchaErrorJS = `
-	if(res.status == "error") {
-		if(typeof res.data === "object") {
-			resetCaptcha(res.data.captcha_id)
-			if(res.data.hasOwnProperty("translation_key")) {
-				bundled.apiToast({"status": "error", "data": bundled.getText(res.data.translation_key)})
-			} else {
-				bundled.apiToast({"status": "error", "data": res.data.text})
-			}
-		} else {
-			bundled.apiToast(res)
-		}
-		return
-	}
-`
-
-const signupJS = `
-let pwd = document.querySelector("#signup_form #pwd")
-let pwd_check = document.querySelector("#signup_form #pwd_check")
-function updateCheck() {
-	let pval = pwd.value;
-	let cval = pwd_check.value;
-	if(cval == "" || pval == "") {
-		pwd_check.classList.remove("is-valid", "is-invalid")
-	} else {
-		pwd_check.classList.toggle("is-valid", pval === cval)
-		pwd_check.classList.toggle("is-invalid", pval !== cval)
-		pwd.classList.toggle("is-valid", pval === cval)
-		pwd.classList.toggle("is-invalid", pval !== cval)
-	}
-}
-pwd.addEventListener("focusout", updateCheck)
-pwd_check.addEventListener("keyup", updateCheck)
-
-async function signup(e) {
-	e.preventDefault()
-	let data = {
-		email: document.querySelector("#signup_form #email").value,
-		username: document.querySelector("#signup_form #name").value,
-		password: pwd.value,
-		language: document.querySelector("#signup_form #langSelect").value,
-		...getCaptchaData()
-	}
-
-	if(pwd.value !== pwd_check.value) {
-		bundled.createToast({
-			status: "error",
-			title: bundled.getText("differentPwds")
-		})
-		return
-	}
-
-	let res = await bundled.postCall("/auth/signup", data)
-` + handleCaptchaErrorJS + `
-	bundled.clearLanguageCookie()
-	bundled.navigateBack()
-}
-document.getElementById("signup_form").addEventListener("submit", signup)
+document.getElementById("captcha_reload_btn").addEventListener("click", () => {
+	document.getElementById("captcha_img").src = "/api/auth/captcha/" + document.getElementById("captcha_id").value + ".png?reload=" + Date.now()
+})
 `

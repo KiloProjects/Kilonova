@@ -26,20 +26,77 @@ func (rt *Web) captchaID(ctx context.Context) string {
 	return rt.base.NewCaptchaID()
 }
 
-func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
-	params := authviews.SignupParams{Enabled: flags.SignupEnabled.Get(r.Context())}
+func (rt *Web) signupPage(w http.ResponseWriter, r *http.Request, status int, errorMessage string) {
+	params := authviews.SignupParams{
+		Enabled:      flags.SignupEnabled.Get(r.Context()),
+		Email:        r.FormValue("email"),
+		Username:     r.FormValue("username"),
+		Language:     r.FormValue("language"),
+		Back:         r.FormValue("back"),
+		ErrorMessage: errorMessage,
+	}
 	if params.Enabled {
-		params.CaptchaID = rt.captchaID(r.Context())
-		if params.CaptchaID != "" {
-			ip, _ := rt.base.GetRequestInfo(r)
-			params.ShowCaptcha = rt.base.MustSolveCaptcha(r.Context(), ip)
+		if ip, _ := rt.base.GetRequestInfo(r); rt.base.MustSolveCaptcha(r.Context(), ip) {
+			params.CaptchaID = rt.base.NewCaptchaID()
 		}
 	}
+	w.WriteHeader(status)
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.signup"),
 		Head:    rt.canonicalURL("/signup"),
 		Content: authviews.SignupPage(r.Context(), params),
 	})
+}
+
+func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
+	rt.signupPage(w, r, http.StatusOK, "")
+}
+
+func (rt *Web) postSignup() http.HandlerFunc {
+	// One signup at a time, so two requests cannot race for the same username or email
+	var mu sync.Mutex
+	return func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		lang := util.Language(r)
+		ip, ua := rt.base.GetRequestInfo(r)
+		if rt.base.MustSolveCaptcha(r.Context(), ip) {
+			if r.FormValue("captcha_response") == "" {
+				rt.signupPage(w, r, http.StatusPreconditionRequired, kilonova.GetText(lang, "auth.captcha.must_solve"))
+				return
+			}
+			if !rt.base.CheckCaptcha(r.FormValue("captcha_id"), r.FormValue("captcha_response")) {
+				rt.signupPage(w, r, http.StatusBadRequest, kilonova.GetText(lang, "auth.captcha.invalid"))
+				return
+			}
+		}
+		if r.FormValue("password") != r.FormValue("password_confirm") {
+			rt.signupPage(w, r, http.StatusBadRequest, kilonova.GetText(lang, "differentPwds"))
+			return
+		}
+
+		uid, err := rt.base.Signup(r.Context(), r.FormValue("email"), r.FormValue("username"), r.FormValue("password"), r.FormValue("language"), kilonova.PreferredThemeNone, ip, &ua)
+		if err != nil {
+			rt.signupPage(w, r, kilonova.ErrorCode(err), err.Error())
+			return
+		}
+
+		// Signup has no "keep me signed in" choice, so the first session is always a short one
+		sid, err := rt.base.CreateSession(r.Context(), uid, false)
+		if err != nil {
+			rt.signupPage(w, r, kilonova.ErrorCode(err), err.Error())
+			return
+		}
+		rt.base.SetSessCookie(w, sid, false)
+		// The language picked in the form is now the account's; drop the cookie that would override it
+		http.SetCookie(w, &http.Cookie{Name: "kn-lang", Path: "/", MaxAge: -1})
+
+		if back := r.FormValue("back"); back != "" {
+			http.Redirect(w, r, rt.base.HostURL().JoinPath(back).String(), http.StatusFound)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
 }
 
 func (rt *Web) forgotPasswordPage(w http.ResponseWriter, r *http.Request, status int, errorMessage string, sent bool) {

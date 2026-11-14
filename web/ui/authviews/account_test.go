@@ -11,14 +11,13 @@ func TestSignupPage(t *testing.T) {
 	t.Run("disabled shows only the notice", func(t *testing.T) {
 		uitest.NotContains(t, uitest.Render(t, SignupPage(ctx, SignupParams{})), "signup_form")
 	})
-	t.Run("no captcha defines the stub functions", func(t *testing.T) {
-		got := uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true}))
-		uitest.Contains(t, got, `id="signup_form"`, "window.location.reload()", `<option value="en" selected>`)
-		uitest.NotContains(t, got, "captcha_container")
+	t.Run("posts to the web route and refills the form", func(t *testing.T) {
+		got := uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, Email: "a@b.c", Username: `u"x`, Language: "ro", Back: "/problems", ErrorMessage: "<bad>"}))
+		uitest.Contains(t, got, `method="POST"`, `action="/signup"`, `value="a@b.c"`, `value="u&#34;x"`, `<option value="ro" selected>`, `name="back" value="/problems"`, "&lt;bad&gt;")
+		uitest.NotContains(t, got, "postCall", "captcha_container")
 	})
-	t.Run("captcha hidden until it must be solved", func(t *testing.T) {
-		uitest.Contains(t, uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, CaptchaID: "abc"})), `src="/api/auth/captcha/abc.png"`, `style="display: none;"`)
-		uitest.NotContains(t, uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, CaptchaID: "abc", ShowCaptcha: true})), "display: none")
+	t.Run("captcha only when it must be solved", func(t *testing.T) {
+		uitest.Contains(t, uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, CaptchaID: "abc"})), `src="/api/auth/captcha/abc.png"`, `name="captcha_response"`)
 	})
 }
 
