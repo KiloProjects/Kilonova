@@ -2,6 +2,9 @@ package api
 
 import (
 	"cmp"
+	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -10,6 +13,7 @@ import (
 
 	"uuid"
 
+	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/internal/util"
 	"github.com/danielgtaylor/huma/v2"
@@ -30,49 +34,19 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 
 		// Handle OAuth token
 		if strings.HasPrefix(h, "Bearer ") {
-			h = h[7:]
-			// The signature and expiry are checked here; revocation is the row lookup below
-			claims, err := op.VerifyAccessToken[*oidc.AccessTokenClaims](ctx.Context(), h, s.base.OIDCProvider().AccessTokenVerifier(ctx.Context()))
+			userFull, scopes, err := s.bearerUser(ctx.Context(), h[7:])
 			if err != nil {
-				next(ctx)
-				return
-			}
-			userID, err := strconv.Atoi(claims.GetSubject())
-			if err != nil {
-				slog.ErrorContext(ctx.Context(), "Received access token with invalid subject", slog.Any("err", err))
-				next(ctx)
-				return
-			}
-
-			tokenID, err := uuid.Parse(claims.JWTID)
-			if err != nil {
-				slog.ErrorContext(ctx.Context(), "Received access token with invalid jwt id", slog.Any("err", err))
-				next(ctx)
-				return
-			}
-
-			token, err := s.base.GetAccessToken(ctx.Context(), tokenID)
-			if err != nil {
-				// Revoking a token deletes its row, so a missing row means revoked
-				next(ctx)
-				return
-			}
-			if token.UserID == nil || userID != *token.UserID {
-				slog.ErrorContext(ctx.Context(), "Received access token with invalid user id", slog.Int("user_id", userID), slog.Any("token_user_id", token.UserID))
-				next(ctx)
-				return
-			}
-
-			userFull, err := s.base.UserFull(ctx.Context(), userID)
-			if err != nil {
-				next(ctx)
+				// Clients tell an expired token from a missing permission by this 401, and refresh on it
+				slog.DebugContext(ctx.Context(), "Rejected access token", slog.Any("err", err))
+				ctx.SetHeader("WWW-Authenticate", `Bearer error="invalid_token"`)
+				huma.WriteErr(api, ctx, http.StatusUnauthorized, "Invalid or expired access token")
 				return
 			}
 
 			trace.SpanFromContext(ctx.Context()).SetAttributes(attribute.Int("user.id", userFull.ID), attribute.String("user.name", userFull.Name))
 
 			next(huma.WithValue(
-				huma.WithValue(huma.WithValue(ctx, util.ScopesKey, token.Scopes),
+				huma.WithValue(huma.WithValue(ctx, util.ScopesKey, scopes),
 					user.AuthedUserKey, userFull),
 				util.AuthMethodKey, "oauth",
 			))
@@ -92,6 +66,36 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 			util.AuthMethodKey, "session",
 		))
 	}
+}
+
+// bearerUser resolves an OAuth access token to its user and granted scopes
+func (s *API) bearerUser(ctx context.Context, rawToken string) (*kilonova.UserFull, []string, error) {
+	// The signature and expiry are checked here; revocation is the row lookup below
+	claims, err := op.VerifyAccessToken[*oidc.AccessTokenClaims](ctx, rawToken, s.base.OIDCProvider().AccessTokenVerifier(ctx))
+	if err != nil {
+		return nil, nil, err
+	}
+	userID, err := strconv.Atoi(claims.GetSubject())
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid subject: %w", err)
+	}
+	tokenID, err := uuid.Parse(claims.JWTID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid jwt id: %w", err)
+	}
+	// Revoking a token deletes its row, so a missing row means revoked
+	token, err := s.base.GetAccessToken(ctx, tokenID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("token not found: %w", err)
+	}
+	if token.UserID == nil || userID != *token.UserID {
+		return nil, nil, errors.New("token subject does not match its user")
+	}
+	userFull, err := s.base.UserFull(ctx, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return userFull, token.Scopes, nil
 }
 
 func (s *API) CheckScopes(api huma.API) func(ctx huma.Context, next func(huma.Context)) {

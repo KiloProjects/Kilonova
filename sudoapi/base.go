@@ -89,6 +89,7 @@ func (s *BaseAPI) Start(ctx context.Context) {
 	go s.cleanupBucketsJob(ctx, 30*time.Minute)
 	go s.refreshProblemStatsJob(ctx, 5*time.Minute)
 	go s.refreshHotProblemsJob(ctx, 4*time.Hour)
+	go s.cleanupOAuthJob(ctx, time.Hour)
 }
 
 // PingDB reports whether the database is reachable. Used by the health endpoint,

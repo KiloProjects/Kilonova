@@ -69,19 +69,17 @@ func (c *Client) ApplicationType() op.ApplicationType {
 	}
 }
 
+// AuthMethod is none for the public clients (native and browser apps), which cannot
+// keep a secret; the provider requires PKCE from them instead.
 func (c *Client) AuthMethod() oidc.AuthMethod {
-	if c.AppType == ApplicationTypeNative {
-		return oidc.AuthMethodNone
+	if c.AppType == ApplicationTypeWeb {
+		return oidc.AuthMethodBasic
 	}
-	return oidc.AuthMethodBasic
+	return oidc.AuthMethodNone
 }
 
 func (c *Client) ResponseTypes() []oidc.ResponseType {
-	return []oidc.ResponseType{
-		oidc.ResponseTypeCode,
-		oidc.ResponseTypeIDToken,
-		oidc.ResponseTypeIDTokenOnly,
-	}
+	return []oidc.ResponseType{oidc.ResponseTypeCode}
 }
 
 func (c *Client) GrantTypes() []oidc.GrantType {

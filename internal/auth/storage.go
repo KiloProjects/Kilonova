@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"strconv"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/KiloProjects/kilonova/infra/postgres"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
@@ -28,13 +28,17 @@ const (
 	refreshTokenLifetime = 48 * time.Hour
 )
 
+// Lifetimes of auth requests, as SQL intervals: how long the user has to log in and approve,
+// and how long the client then has to exchange the code.
+const (
+	authRequestLifetime = "1 hour"
+	authCodeLifetime    = "10 minutes"
+)
+
 var _ op.Storage = (*AuthStorage)(nil)
 
-// Outside Proof of Concept, TODO: Implement
-// var _ op.TokenExchangeStorage = (*AuthStorage)(nil)
-// var _ op.TokenExchangeTokensVerifierStorage = (*AuthStorage)(nil)
-// var _ op.DeviceAuthorizationStorage = (*AuthStorage)(nil)
-// var _ op.ClientCredentialsStorage = (*AuthStorage)(nil)
+// Token exchange, device authorization and client credentials are not implemented;
+// the provider turns those grants off for a storage without the matching interfaces.
 
 type AuthStorage struct {
 	conn     *pgxpool.Pool
@@ -94,7 +98,7 @@ func (s *AuthStorage) CreateAuthRequest(ctx context.Context, authReq *oidc.AuthR
 }
 
 func (s *AuthStorage) AuthRequestByID(ctx context.Context, reqID string) (op.AuthRequest, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE id = $1", reqID)
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE id = $1 AND created_at > NOW() - $2::interval", reqID, authRequestLifetime)
 	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Request])
 	if err != nil {
 		return nil, err
@@ -103,7 +107,7 @@ func (s *AuthStorage) AuthRequestByID(ctx context.Context, reqID string) (op.Aut
 }
 
 func (s *AuthStorage) AuthRequestByCode(ctx context.Context, reqCode string) (op.AuthRequest, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE request_code = $1", reqCode)
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_requests WHERE request_code = $1 AND auth_time > NOW() - $2::interval", reqCode, authCodeLifetime)
 	val, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Request])
 	if err != nil {
 		return nil, err
@@ -122,228 +126,107 @@ func (s *AuthStorage) DeleteAuthRequest(ctx context.Context, reqID string) error
 }
 
 func (s *AuthStorage) getAccessToken(ctx context.Context, tokenID uuid.UUID) (*Token, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2", tokenID, TokenTypeAccess)
-	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
+	return s.getToken(ctx, tokenID, TokenTypeAccess)
 }
 
 func (s *AuthStorage) getRefreshToken(ctx context.Context, tokenID uuid.UUID) (*Token, error) {
-	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2", tokenID, TokenTypeRefresh)
+	return s.getToken(ctx, tokenID, TokenTypeRefresh)
+}
+
+// getToken only returns live tokens. Expiry is written and compared with the database clock (see insertToken)
+func (s *AuthStorage) getToken(ctx context.Context, tokenID uuid.UUID, tokenType TokenType) (*Token, error) {
+	rows, _ := s.conn.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2 AND expires_at > NOW()", tokenID, tokenType)
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
 }
 
-func (s *AuthStorage) createAccessToken(ctx context.Context, applicationID uuid.UUID, refreshTokenID *uuid.UUID, userID *int, audience []string, scopes []string) (*Token, error) {
+type execer interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+// insertToken stores a token that expires after lifetime. Both timestamps come from the
+// database clock, since the columns have no time zone and are compared against NOW().
+func insertToken(ctx context.Context, db execer, t *Token, lifetime time.Duration) error {
+	_, err := db.Exec(ctx, `
+		INSERT INTO oauth_tokens (id, expires_at, application_id, from_token, user_id, audience, scopes, token_type, amr, auth_time)
+		VALUES ($1, NOW() + make_interval(secs => $2), $3, $4, $5, $6, $7, $8, $9, $10)
+	`, t.ID, lifetime.Seconds(), t.ApplicationID, t.ParentToken, t.UserID, t.Audience, t.Scopes, t.TokenType, t.AMR, t.AuthTime)
+	return err
+}
+
+// CreateAccessToken issues a lone access token for an approved auth request (code flow without offline_access)
+func (s *AuthStorage) CreateAccessToken(ctx context.Context, request op.TokenRequest) (string, time.Time, error) {
+	req, ok := request.(*Request)
+	if !ok {
+		return "", time.Time{}, fmt.Errorf("unsupported token request %T", request)
+	}
 	token := &Token{
 		ID:            uuid.NewV7(),
-		CreatedAt:     time.Now(),
-		ExpiresAt:     time.Now().Add(accessTokenLifetime),
-		ApplicationID: applicationID,
-		ParentToken:   refreshTokenID,
-		UserID:        userID,
-		Audience:      audience,
-		Scopes:        scopes,
+		ApplicationID: req.ApplicationID,
+		UserID:        req.UserID,
+		Audience:      req.GetAudience(),
+		Scopes:        req.GetScopes(),
+		TokenType:     TokenTypeAccess,
+	}
+	if err := insertToken(ctx, s.conn, token, accessTokenLifetime); err != nil {
+		return "", time.Time{}, err
+	}
+	return token.ID.String(), time.Now().Add(accessTokenLifetime), nil
+}
+
+// CreateAccessAndRefreshTokens issues an access token together with the refresh token it hangs off:
+// the access token points at the refresh token through from_token, so deleting a refresh token
+// (rotation, revocation) takes its access tokens with it.
+//
+// The request is either an approved *Request (code flow with offline_access, currentRefreshToken empty)
+// or a *RefreshTokenRequest, in which case currentRefreshToken is rotated out.
+// The returned expiration is the access token's.
+func (s *AuthStorage) CreateAccessAndRefreshTokens(ctx context.Context, request op.TokenRequest, currentRefreshToken string) (accessTokenID string, newRefreshTokenID string, expiration time.Time, err error) {
+	refresh := &Token{ID: uuid.NewV7(), TokenType: TokenTypeRefresh, Audience: request.GetAudience()}
+	switch req := request.(type) {
+	case *Request:
+		refresh.ApplicationID, refresh.UserID, refresh.Scopes = req.ApplicationID, req.UserID, req.Scopes
+		refresh.AMR, refresh.AuthTime = req.GetAMR(), req.AuthTime
+	case *RefreshTokenRequest:
+		// The new refresh token keeps the original grant, even if this request narrowed the scopes
+		refresh.ApplicationID, refresh.UserID, refresh.Scopes = req.ApplicationID, req.UserID, req.Scopes
+		refresh.AMR, refresh.AuthTime = req.AMR, req.AuthTime
+	default:
+		return "", "", time.Time{}, fmt.Errorf("unsupported token request %T", request)
+	}
+	access := &Token{
+		ID:            uuid.NewV7(),
+		ApplicationID: refresh.ApplicationID,
+		ParentToken:   &refresh.ID,
+		UserID:        refresh.UserID,
+		Audience:      refresh.Audience,
+		Scopes:        request.GetScopes(),
 		TokenType:     TokenTypeAccess,
 	}
 
-	if _, err := s.conn.Exec(ctx, `
-		INSERT INTO oauth_tokens (id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, token.ID, token.CreatedAt, token.ExpiresAt, token.ApplicationID, token.ParentToken, token.UserID, token.Audience, token.Scopes, token.TokenType); err != nil {
-		return nil, err
-	}
-
-	return token, nil
-}
-
-func (s *AuthStorage) createRefreshToken(ctx context.Context, accessToken *Token, amr []string, authTime time.Time) (*Token, error) {
-	token := &Token{
-		ID:            uuid.NewV7(),
-		CreatedAt:     time.Now(),
-		ExpiresAt:     time.Now().Add(refreshTokenLifetime),
-		ApplicationID: accessToken.ApplicationID,
-		ParentToken:   &accessToken.ID,
-		UserID:        accessToken.UserID,
-		Scopes:        accessToken.Scopes,
-		Audience:      accessToken.Audience,
-		TokenType:     TokenTypeRefresh,
-
-		AMR:      amr,
-		AuthTime: &authTime,
-	}
-
-	if _, err := s.conn.Exec(ctx, `
-		INSERT INTO oauth_tokens (id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type, amr, auth_time)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, token.ID, token.CreatedAt, token.ExpiresAt, token.ApplicationID, token.ParentToken, token.UserID, token.Audience, token.Scopes, token.TokenType, token.AMR, token.AuthTime); err != nil {
-		return nil, err
-	}
-
-	return token, nil
-}
-
-func (s *AuthStorage) renewRefreshToken(ctx context.Context, currentRefreshTokenID uuid.UUID, newRefreshTokenID uuid.UUID, accessTokenID uuid.UUID) error {
-	return pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
-		rows, _ := tx.Query(ctx, "SELECT * FROM oauth_tokens WHERE id = $1 AND token_type = $2", currentRefreshTokenID, TokenTypeRefresh)
-		refreshToken, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[Token])
-		if err != nil {
+	err = pgx.BeginFunc(ctx, s.conn, func(tx pgx.Tx) error {
+		if currentRefreshToken != "" {
+			oldID, err := uuid.Parse(currentRefreshToken)
+			if err != nil {
+				return op.ErrInvalidRefreshToken
+			}
+			// Deleting doubles as the reuse check: of two concurrent refreshes, one finds no row
+			tag, err := tx.Exec(ctx, "DELETE FROM oauth_tokens WHERE id = $1 AND token_type = $2 AND expires_at > NOW()", oldID, TokenTypeRefresh)
+			if err != nil {
+				return err
+			}
+			if tag.RowsAffected() == 0 {
+				return op.ErrInvalidRefreshToken
+			}
+		}
+		if err := insertToken(ctx, tx, refresh, refreshTokenLifetime); err != nil {
 			return err
 		}
-
-		_, err = tx.Exec(ctx, "DELETE FROM oauth_tokens WHERE id = $1", currentRefreshTokenID)
-		if err != nil {
-			return err
-		}
-
-		refreshToken.ID = newRefreshTokenID
-		refreshToken.ExpiresAt = time.Now().Add(refreshTokenLifetime)
-		refreshToken.ParentToken = &accessTokenID
-
-		if _, err = tx.Exec(ctx, `INSERT INTO oauth_tokens 
-		(id, created_at, expires_at, application_id, from_token, user_id, audience, scopes, token_type, amr, auth_time)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		`, newRefreshTokenID, refreshToken.CreatedAt, refreshToken.ExpiresAt, refreshToken.ApplicationID, refreshToken.ParentToken, refreshToken.UserID, refreshToken.Audience, refreshToken.Scopes, refreshToken.TokenType, refreshToken.AMR, refreshToken.AuthTime); err != nil {
-			return err
-		}
-
-		return nil
+		return insertToken(ctx, tx, access, accessTokenLifetime)
 	})
-}
-
-func (s *AuthStorage) exchangeRefreshToken(ctx context.Context, req op.TokenExchangeRequest) (accessTokenID uuid.UUID, newRefreshTokenID uuid.UUID, expiration time.Time, err error) {
-	applicationID, err := uuid.Parse(req.GetClientID())
-	if err != nil {
-		return uuid.Nil(), uuid.Nil(), time.Time{}, err
-	}
-
-	authTime := req.GetAuthTime()
-
-	slog.InfoContext(ctx, "Exchange refresh token", slog.String("subject", req.GetSubject()))
-	userID, err := strconv.Atoi(req.GetSubject())
-	if err != nil {
-		return uuid.Nil(), uuid.Nil(), time.Time{}, err
-	}
-
-	accessToken, err := s.createAccessToken(ctx, applicationID, nil, &userID, req.GetAudience(), req.GetScopes())
-	if err != nil {
-		return uuid.Nil(), uuid.Nil(), time.Time{}, err
-	}
-
-	refreshToken, err := s.createRefreshToken(ctx, accessToken, nil, authTime)
-	if err != nil {
-		return uuid.Nil(), uuid.Nil(), time.Time{}, err
-	}
-
-	return accessToken.ID, refreshToken.ID, refreshToken.ExpiresAt, nil
-}
-
-// The TokenRequest parameter of CreateAccessToken can be any of:
-//
-// * TokenRequest as returned by ClientCredentialsStorage.ClientCredentialsTokenRequest,
-//
-// * AuthRequest as returned by AuthRequestByID or AuthRequestByCode (above)
-//
-//   - *oidc.JWTTokenRequest from a JWT that is the assertion value of a JWT Profile
-//     Grant: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
-//
-// * TokenExchangeRequest as returned by ValidateTokenExchangeRequest
-func (s *AuthStorage) CreateAccessToken(ctx context.Context, req op.TokenRequest) (string, time.Time, error) {
-	var appID uuid.UUID
-	switch req := req.(type) {
-	case *Request:
-		appID = req.ApplicationID
-	case op.TokenExchangeRequest:
-		var err error
-		appID, err = uuid.Parse(req.GetClientID())
-		if err != nil {
-			return "", time.Time{}, err
-		}
-	}
-
-	userID, err := strconv.Atoi(req.GetSubject())
-	if err != nil {
-		return "", time.Time{}, err
-	}
-
-	token, err := s.createAccessToken(ctx, appID, nil, &userID, req.GetAudience(), req.GetScopes())
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	return token.ID.String(), token.ExpiresAt, nil
-}
-
-// The TokenRequest parameter of CreateAccessAndRefreshTokens can be any of:
-//
-// * TokenRequest as returned by ClientCredentialsStorage.ClientCredentialsTokenRequest
-//
-// * RefreshTokenRequest as returned by AuthStorage.TokenRequestByRefreshToken
-//
-//   - AuthRequest as by returned by the AuthRequestByID or AuthRequestByCode (above).
-//     Used for the authorization code flow which requested offline_access scope and
-//     registered the refresh_token grant type in advance
-//
-// * TokenExchangeRequest as returned by ValidateTokenExchangeRequest
-func (s *AuthStorage) CreateAccessAndRefreshTokens(ctx context.Context, request op.TokenRequest, currentRefreshToken string) (accessTokenID string, newRefreshTokenID string, expiration time.Time, err error) {
-	// generate tokens via token exchange flow if request is relevant
-	if teReq, ok := request.(op.TokenExchangeRequest); ok {
-		accessTokenID, newRefreshTokenID, expiration, err := s.exchangeRefreshToken(ctx, teReq)
-		if err != nil {
-			return "", "", time.Time{}, err
-		}
-		return accessTokenID.String(), newRefreshTokenID.String(), expiration, nil
-	}
-
-	// get the information depending on the request type / implementation
-	applicationID, authTime, userID, amr := getInfoFromRequest(request)
-
-	// if currentRefreshToken is empty (Code Flow) we will have to create a new refresh token
-	if currentRefreshToken == "" {
-		accessToken, err := s.createAccessToken(ctx, applicationID, nil, userID, request.GetAudience(), request.GetScopes())
-		if err != nil {
-			return "", "", time.Time{}, err
-		}
-		refreshToken, err := s.createRefreshToken(ctx, accessToken, amr, authTime)
-		if err != nil {
-			return "", "", time.Time{}, err
-		}
-		return accessToken.ID.String(), refreshToken.ID.String(), refreshToken.ExpiresAt, nil
-	}
-
-	// if we get here, the currentRefreshToken was not empty, so the call is a refresh token request
-	// we therefore will have to check the currentRefreshToken and renew the refresh token
-
-	refreshTokenID, err := uuid.Parse(currentRefreshToken)
 	if err != nil {
 		return "", "", time.Time{}, err
 	}
-
-	newRefreshToken := uuid.NewV7()
-
-	accessToken, err := s.createAccessToken(ctx, applicationID, &newRefreshToken, userID, request.GetAudience(), request.GetScopes())
-	if err != nil {
-		return "", "", time.Time{}, err
-	}
-
-	if err := s.renewRefreshToken(ctx, refreshTokenID, newRefreshToken, accessToken.ID); err != nil {
-		return "", "", time.Time{}, err
-	}
-
-	return accessToken.ID.String(), newRefreshToken.String(), accessToken.ExpiresAt, nil
-}
-
-// getInfoFromRequest returns the clientID, authTime and amr depending on the op.TokenRequest type / implementation
-func getInfoFromRequest(req op.TokenRequest) (applicationID uuid.UUID, authTime time.Time, userID *int, amr []string) {
-	authReq, ok := req.(*Request) // Code Flow (with scope offline_access)
-	if ok {
-		t := time.Time{}
-		if authReq.AuthTime != nil {
-			t = *authReq.AuthTime
-		}
-		return authReq.ApplicationID, t, authReq.UserID, authReq.GetAMR()
-	}
-	refreshReq, ok := req.(*RefreshTokenRequest) // Refresh Token Request
-	if ok {
-		return refreshReq.ApplicationID, refreshReq.GetAuthTime(), refreshReq.UserID, refreshReq.AMR
-	}
-	return uuid.Nil(), time.Time{}, nil, nil
+	return access.ID.String(), refresh.ID.String(), time.Now().Add(accessTokenLifetime), nil
 }
 
 func (s *AuthStorage) TokenRequestByRefreshToken(ctx context.Context, refreshTokenID string) (op.RefreshTokenRequest, error) {
@@ -395,11 +278,28 @@ func (s *AuthStorage) GetRefreshTokenInfo(ctx context.Context, clientID string, 
 // to get information from refresh tokens that are not either "<tokenID>:<userID>" strings
 // nor JWTs.
 func (s *AuthStorage) RevokeToken(ctx context.Context, tokenOrTokenID string, userID string, clientID string) *oidc.Error {
-	_, err := s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE id = $1 AND user_id = $2 AND application_id = $3", tokenOrTokenID, userID, clientID)
-	if err != nil {
+	tokenID, err1 := uuid.Parse(tokenOrTokenID)
+	userIDInt, err2 := strconv.Atoi(userID)
+	if err1 != nil || err2 != nil {
+		// Not a token of ours: RFC 7009 wants that to succeed
+		return nil
+	}
+	if _, err := s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE id = $1 AND user_id = $2 AND application_id = $3", tokenID, userIDInt, clientID); err != nil {
 		return oidc.ErrServerError()
 	}
 	return nil
+}
+
+// Cleanup deletes dead auth requests and tokens. Tokens linger for one refresh lifetime
+// past their expiry: rows issued before access tokens pointed at their refresh token
+// have the link the other way around, and deleting such an access token on time
+// would cascade to its live refresh token.
+func (s *AuthStorage) Cleanup(ctx context.Context) error {
+	if _, err := s.conn.Exec(ctx, "DELETE FROM oauth_requests WHERE created_at < NOW() - interval '1 day'"); err != nil {
+		return err
+	}
+	_, err := s.conn.Exec(ctx, "DELETE FROM oauth_tokens WHERE expires_at < NOW() - make_interval(secs => $1)", refreshTokenLifetime.Seconds())
+	return err
 }
 
 func (s *AuthStorage) SigningKey(ctx context.Context) (op.SigningKey, error) {
@@ -535,10 +435,6 @@ func (s *AuthStorage) SetUserinfoFromToken(ctx context.Context, userinfo *oidc.U
 	// 		return err
 	// 	}
 	// }
-	if token.ExpiresAt.Before(time.Now()) {
-		return fmt.Errorf("token expired")
-	}
-
 	return s.setUserInfo(ctx, userinfo, *token.UserID, token.ApplicationID.String(), token.Scopes)
 }
 

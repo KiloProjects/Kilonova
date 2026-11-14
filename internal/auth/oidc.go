@@ -120,8 +120,3 @@ func (a *Request) GetSubject() string {
 func (a *Request) Done() bool {
 	return a.RequestDone
 }
-
-type OIDCCodeChallenge struct {
-	Challenge string
-	Method    string
-}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
@@ -134,6 +135,11 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Web) postOAuthGrant(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("authRequestID")
+	if user.UserBrief(r) == nil {
+		// /login is open to visitors; they have to log in before granting anything
+		http.Redirect(w, r, "/login?authRequestID="+url.QueryEscape(id), http.StatusSeeOther)
+		return
+	}
 
 	if err := rt.base.ApproveAuthRequest(r.Context(), id, user.UserBrief(r).ID); err != nil {
 		slog.ErrorContext(r.Context(), "Failed to approve auth request", slog.Any("error", err))

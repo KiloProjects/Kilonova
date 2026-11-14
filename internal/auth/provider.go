@@ -3,7 +3,6 @@ package auth
 import (
 	"crypto/sha256"
 	"errors"
-	"log/slog"
 
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
@@ -30,8 +29,7 @@ func GetProvider(cfg OauthProviderConfig) (*op.Provider, error) {
 		AuthMethodPost:          true,
 		AuthMethodPrivateKeyJWT: false,
 
-		GrantTypeRefreshToken:  true,
-		RequestObjectSupported: true,
+		GrantTypeRefreshToken: true,
 		SupportedUILocales: []language.Tag{
 			language.English,
 			language.Romanian,
@@ -43,14 +41,9 @@ func GetProvider(cfg OauthProviderConfig) (*op.Provider, error) {
 			oidc.ScopeEmail,
 			oidc.ScopeOfflineAccess,
 		},
-
-		BackChannelLogoutSupported:        true,
-		BackChannelLogoutSessionSupported: true,
 	}
 
-	opts := []op.Option{
-		op.WithLogger(slog.Default().WithGroup("oidc")),
-	}
+	var opts []op.Option
 	if cfg.Debug {
 		opts = append(opts, op.WithAllowInsecure())
 	}

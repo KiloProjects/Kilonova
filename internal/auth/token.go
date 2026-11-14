@@ -34,6 +34,8 @@ var _ op.RefreshTokenRequest = (*RefreshTokenRequest)(nil)
 
 type RefreshTokenRequest struct {
 	*Token
+	// narrowed is the subset of scopes this refresh asked for, if any
+	narrowed []string
 }
 
 func (r *RefreshTokenRequest) GetAMR() []string {
@@ -56,6 +58,9 @@ func (r *RefreshTokenRequest) GetClientID() string {
 }
 
 func (r *RefreshTokenRequest) GetScopes() []string {
+	if r.narrowed != nil {
+		return r.narrowed
+	}
 	return r.Scopes
 }
 
@@ -67,5 +72,5 @@ func (r *RefreshTokenRequest) GetSubject() string {
 }
 
 func (r *RefreshTokenRequest) SetCurrentScopes(scopes []string) {
-	r.Scopes = scopes
+	r.narrowed = scopes
 }

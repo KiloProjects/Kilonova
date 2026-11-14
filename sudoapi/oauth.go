@@ -3,6 +3,7 @@ package sudoapi
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"uuid"
 
@@ -80,4 +81,20 @@ func (s *BaseAPI) AuthorizedOAuthClients(ctx context.Context, userID int) ([]*au
 
 func (s *BaseAPI) RevokeOAuthClient(ctx context.Context, userID int, clientID uuid.UUID) error {
 	return s.authStorage.RevokeClientTokens(ctx, userID, clientID)
+}
+
+// cleanupOAuthJob periodically deletes expired OAuth tokens and abandoned auth requests
+func (s *BaseAPI) cleanupOAuthJob(ctx context.Context, interval time.Duration) error {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		if err := s.authStorage.Cleanup(ctx); err != nil {
+			slog.WarnContext(ctx, "Could not clean up OAuth tokens", slog.Any("err", err))
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+		}
+	}
 }
