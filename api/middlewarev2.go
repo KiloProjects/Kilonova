@@ -204,7 +204,7 @@ func (s *API) MustBeAdminV2(api huma.API) func(ctx huma.Context, next func(huma.
 	return func(ctx huma.Context, next func(huma.Context)) {
 		s.MustBeAuthedV2(api)(ctx, func(ctx huma.Context) {
 			if !user.UserBriefContext(ctx.Context()).IsAdmin() {
-				huma.WriteErr(api, ctx, http.StatusUnauthorized, "You must be an admin to do this")
+				huma.WriteErr(api, ctx, http.StatusForbidden, "You must be an admin to do this")
 				return
 			}
 			next(ctx)

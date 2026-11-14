@@ -100,8 +100,10 @@ export class KNClient {
 					statusCode: resp.status,
 				}) as Response<T>;
 			}
+			// huma errors are RFC 7807 problems: per-field messages in errors, else detail/title.
+			const problem = await resp.json();
 			return ({
-				data: (await resp.json()).errors.map(val => val.message).join("; "),
+				data: problem.errors?.length ? problem.errors.map((val: any) => val.message).join("; ") : (problem.detail ?? problem.title),
 				status: "error",
 				statusCode: resp.status,
 			}) as Response<T>;
@@ -149,6 +151,25 @@ export async function bodyCall<T = any>(call: string, body: any): Promise<Respon
 	return defaultClient.request<T>({
 		url: call,
 		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(body),
+	});
+}
+
+export async function getCallV2<T = any>(call: string, params: any = {}): Promise<Response<T>> {
+	return defaultClient.requestV2<T>({
+		url: call,
+		method: "GET",
+		queryParams: params,
+	});
+}
+
+export async function patchCallV2<T = any>(call: string, body: any): Promise<Response<T>> {
+	return defaultClient.requestV2<T>({
+		url: call,
+		method: "PATCH",
 		headers: {
 			"Content-Type": "application/json",
 		},

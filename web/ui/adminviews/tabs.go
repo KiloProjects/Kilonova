@@ -13,6 +13,8 @@ func Tabs(ctx context.Context, path string) Node {
 	tab := func(href, key string) ui.Tab { return ui.Tab{Key: href, Href: href, Label: ui.T(ctx, key)} }
 	return Nav(Class("segment-panel"), ui.Tabs(path,
 		tab("/admin", "panel.admin"),
+		tab("/admin/settings", "settings.title"),
+		tab("/admin/flashes", "flashes.title"),
 		tab("/admin/users", "users"),
 		tab("/admin/sessions", "manage_sessions"),
 		tab("/admin/oauth", "oauth_clients"),

@@ -1,14 +1,9 @@
 package api
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/KiloProjects/kilonova"
-	"github.com/KiloProjects/kilonova/domain/config"
 )
 
 func (s *API) setAdmin(w http.ResponseWriter, r *http.Request) {
@@ -75,47 +70,6 @@ func (s *API) setProposer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	returnData(w, "Succesfully removed proposer")
-}
-
-func (s *API) updateFlags(w http.ResponseWriter, r *http.Request) {
-	var args struct {
-		BoolFlags    map[string]bool     `json:"bool_flags"`
-		StringFlags  map[string]string   `json:"string_flags"`
-		IntFlags     map[string]int      `json:"int_flags"`
-		IntListFlags map[string][]int    `json:"int_array_flags"`
-		StrListFlags map[string][]string `json:"str_array_flags"`
-	}
-	if err := parseJSONBody(r, &args); err != nil {
-		statusError(w, err)
-		return
-	}
-	if err := errors.Join(
-		updateFlagMap(r.Context(), args.BoolFlags),
-		updateFlagMap(r.Context(), args.StringFlags),
-		updateFlagMap(r.Context(), args.IntFlags),
-		updateFlagMap(r.Context(), args.IntListFlags),
-		updateFlagMap(r.Context(), args.StrListFlags),
-	); err != nil {
-		// The new values are active either way; only persisting some of them failed.
-		statusError(w, fmt.Errorf("flags updated but not all were saved, they will revert on restart: %w", err))
-		return
-	}
-	returnData(w, "Updated flags. Some changes may only apply after a restart")
-}
-
-// updateFlagMap applies every known flag in vals, skipping unknown names, and
-// joins the persistence errors.
-func updateFlagMap[T any](ctx context.Context, vals map[string]T) error {
-	var errs []error
-	for k, v := range vals {
-		flg, ok := config.GetFlag[T](k)
-		if !ok {
-			slog.WarnContext(ctx, "Flag not found", slog.String("name", k))
-			continue
-		}
-		errs = append(errs, flg.Update(ctx, v))
-	}
-	return errors.Join(errs...)
 }
 
 func (s *API) addDonation(w http.ResponseWriter, r *http.Request) {

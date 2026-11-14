@@ -302,7 +302,7 @@ func (rt *Web) mustBeProposer(next http.Handler) http.Handler {
 func (rt *Web) mustBeAdmin(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !user.UserBrief(r).IsAdmin() {
-			rt.statusPage(w, r, 401, "Trebuie să fii admin")
+			rt.statusPage(w, r, http.StatusForbidden, "Trebuie să fii admin")
 			return
 		}
 		next.ServeHTTP(w, r)

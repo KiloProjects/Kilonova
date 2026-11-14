@@ -43,5 +43,7 @@ func (s *API) AdminV2() http.Handler {
 		Security:    []map[string][]string{},
 	}, s.generateUser)
 
+	registerFlagOps(api)
+
 	return r
 }

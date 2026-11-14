@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
+	"slices"
 	"sync"
 	"testing"
 
@@ -104,4 +105,75 @@ func TestConcurrentUpdateAndLoad(t *testing.T) {
 	}
 	wg.Go(func() { assert.NoError(t, fs.InitializeFlags(ctx, store)) })
 	wg.Wait()
+}
+
+func TestSecretMarking(t *testing.T) {
+	require.True(t, GenSecretFlag("test.secret.marked", "", "secret").Secret())
+	require.False(t, GenFlag("test.secret.plain", "", "plain").Secret())
+}
+
+func TestFlagNamesSorted(t *testing.T) {
+	GenFlag("test.names.b", 0, "b")
+	GenFlag("test.names.a", 0, "a")
+	names := FlagNames()
+	require.True(t, slices.IsSorted(names))
+	require.Less(t, slices.Index(names, "test.names.a"), slices.Index(names, "test.names.b"))
+	require.NotEqual(t, -1, slices.Index(names, "test.names.a"))
+}
+
+func TestExport(t *testing.T) {
+	set := GenFlag("test.export.set", 1, "set")
+	GenFlag("test.export.default", 2, "default")
+	secret := GenSecretFlag("test.export.secret", "", "secret")
+	fs := NewFlagset()
+	ctx := WithFlagset(t.Context(), fs)
+	require.NoError(t, set.Update(ctx, 5))
+	require.NoError(t, secret.Update(ctx, "hunter2"))
+
+	out, err := fs.Export(false)
+	require.NoError(t, err)
+	require.Equal(t, map[string]json.RawMessage{"test.export.set": json.RawMessage(`5`)}, out,
+		"only explicitly set, non-secret flags without opt-in")
+
+	out, err = fs.Export(true)
+	require.NoError(t, err)
+	require.Equal(t, json.RawMessage(`"hunter2"`), out["test.export.secret"], "secret included with opt-in")
+	require.NotContains(t, out, "test.export.default", "defaults are never pinned")
+}
+
+func TestImport(t *testing.T) {
+	num := GenFlag("test.import.num", 0, "num")
+	list := GenFlag("test.import.list", []string{}, "list")
+	untouched := GenFlag("test.import.untouched", "keep", "untouched")
+	secret := GenSecretFlag("test.import.secret", "", "secret")
+	store := newMemStore()
+	fs := NewFlagset()
+	require.NoError(t, fs.InitializeFlags(t.Context(), store))
+	require.NoError(t, untouched.Update(WithFlagset(t.Context(), fs), "before"))
+
+	res := fs.Import(t.Context(), map[string]json.RawMessage{
+		"test.import.num":    json.RawMessage(`"abc"`),
+		"test.import.list":   json.RawMessage(`["a","b"]`),
+		"test.import.secret": json.RawMessage(`"s3cret"`),
+		"test.import.gone":   json.RawMessage(`1`),
+	})
+
+	require.Equal(t, []string{"test.import.list", "test.import.secret"}, res.Applied)
+	require.Equal(t, []string{"test.import.secret"}, res.AppliedSecrets)
+	require.Contains(t, res.Skipped, "test.import.gone")
+	require.Contains(t, res.Skipped, "test.import.num", "wrong type is skipped, not fatal")
+	require.Empty(t, res.Errors)
+
+	require.Equal(t, 0, num.Of(fs))
+	require.Equal(t, []string{"a", "b"}, list.Of(fs))
+	require.Equal(t, "s3cret", secret.Of(fs))
+	require.Equal(t, "before", untouched.Of(fs), "flags absent from the file are untouched")
+	require.Equal(t, json.RawMessage(`["a","b"]`), store.data["test.import.list"], "imported values are persisted")
+}
+
+func TestGetFlagWrongType(t *testing.T) {
+	GenFlag("test.wrongtype", 1, "int flag")
+	f, ok := GetFlag[string]("test.wrongtype")
+	require.False(t, ok)
+	require.Nil(t, f, "a miss must be a nil interface, not a typed nil")
 }

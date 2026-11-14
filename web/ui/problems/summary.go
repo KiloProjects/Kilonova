@@ -8,17 +8,19 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/flashes"
 	"github.com/shopspring/decimal"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
 
-// ContestDisclaimer is a dismissable warning shown on problems that came from a contest.
+// ContestDisclaimer is a dismissable warning shown on problems that came from a contest;
+// nothing when hidden on this instance.
 func ContestDisclaimer(ctx context.Context) Node {
-	return Section(Data("flashname", "contest_disclaimer"), Class("segment-panel hidden"),
+	return flashes.Panel(ctx, flashes.ContestDisclaimer,
 		Div(Class("modal-header"),
 			H2(Style("margin: 0.25rem;"), I(Class("fas fa-triangle-exclamation")), Text(" "), ui.T(ctx, "contestDisclaimerTitle")),
-			Button(Data("flashdiscard", "contest_disclaimer"), I(Class("modal-close fas fa-xmark"))),
+			flashes.DismissButton(flashes.ContestDisclaimer),
 		),
 		Div(Class("px-2 py-2"), ui.T(ctx, "contestDisclaimerBody")),
 	)

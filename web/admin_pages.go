@@ -56,6 +56,20 @@ func (rt *Web) adminPanel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (rt *Web) adminSettings(w http.ResponseWriter, r *http.Request) {
+	rt.runLayout(w, r, &LayoutParams{
+		Title:   kilonova.GetText(util.Language(r), "settings.title"),
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/settings"), adminviews.Settings(r.Context())},
+	})
+}
+
+func (rt *Web) adminFlashes(w http.ResponseWriter, r *http.Request) {
+	rt.runLayout(w, r, &LayoutParams{
+		Title:   kilonova.GetText(util.Language(r), "flashes.title"),
+		Content: g.Group{adminviews.Tabs(r.Context(), "/admin/flashes"), adminviews.Flashes(r.Context())},
+	})
+}
+
 func (rt *Web) userGen(w http.ResponseWriter, r *http.Request) {
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "user_gen.title"),

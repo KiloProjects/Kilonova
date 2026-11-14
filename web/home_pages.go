@@ -129,7 +129,7 @@ func (rt *Web) index() http.HandlerFunc {
 			LatestProblems:     latestProblems,
 			MoreLatestProblems: problemCount > 20,
 
-			Announcements: []g.Node{modals.GPCAnnouncement()},
+			Announcements: []g.Node{modals.GPCAnnouncement(r.Context())},
 			QuickSearch:   flags.QuickSearchBox.Get(r.Context()),
 
 			PinnedLists:     pinnedLists,

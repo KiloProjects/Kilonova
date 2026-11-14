@@ -8,6 +8,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/flashes"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -98,9 +99,9 @@ func ProblemSources(ctx context.Context, problemList *kilonova.ProblemList, prob
 	)
 }
 
-// GPCAnnouncement is a dismissable banner, shown until gpcEndTime.
-func GPCAnnouncement() Node {
-	return Section(Data("flashname", "gpc_announcement"), Class("segment-panel hidden"),
+// GPCAnnouncement is the dismissable Girls' Programming Camp banner.
+func GPCAnnouncement(ctx context.Context) Node {
+	return flashes.Panel(ctx, flashes.GPC,
 		Div(Class("flex justify-between"),
 			P(Style("margin: 0.1rem;"),
 				I(Class("fas fa-circle-exclamation")), Text(" "),
@@ -109,7 +110,7 @@ func GPCAnnouncement() Node {
 					A(Href("https://sepi.ro/news/rGSJp5?utm_source=kilonova&utm_medium=alert&utm_campaign=gpc"), Text("Află mai multe!")),
 				),
 			),
-			Button(Data("flashdiscard", "gpc_announcement"), I(Class("modal-close fas fa-xmark"))),
+			flashes.DismissButton(flashes.GPC),
 		),
 	)
 }

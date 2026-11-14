@@ -248,6 +248,8 @@ func (rt *Web) Handler() http.Handler {
 
 		r.With(rt.mustBeAdmin).Route("/admin", func(r chi.Router) {
 			r.Get("/", rt.adminPanel)
+			r.Get("/settings", rt.adminSettings)
+			r.Get("/flashes", rt.adminFlashes)
 			r.Get("/users", rt.usersList())
 			r.Get("/user_gen", rt.userGen)
 			r.Get("/contest_gen", rt.contestGen)

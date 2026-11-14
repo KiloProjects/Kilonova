@@ -3369,3 +3369,47 @@ ro = "Nu ați autorizat nicio aplicație."
 [button.revoke]
 en = "Revoke"
 ro = "Revocă"
+
+[config.secret_flags]
+en = "Secret flags"
+ro = "Flag-uri secrete"
+
+[flags_transfer.title]
+en = "Export/import flags"
+ro = "Export/import de flag-uri"
+
+[flags_transfer.include_secrets]
+en = "Include secret flags"
+ro = "Include flag-urile secrete"
+
+[flags_transfer.export]
+en = "Export"
+ro = "Exportă"
+
+[flags_transfer.import]
+en = "Import"
+ro = "Importă"
+
+[settings.title]
+en = "Settings"
+ro = "Setări"
+
+[settings.group.front_page]
+en = "Front page"
+ro = "Pagina principală"
+
+[settings.group.navbar_footer]
+en = "Navbar & footer"
+ro = "Navbar & footer"
+
+[settings.group.donations]
+en = "Donations"
+ro = "Donații"
+
+[flashes.title]
+en = "Flashes"
+ro = "Anunțuri"
+
+[flashes.hide]
+en = "Hide"
+ro = "Ascunde"

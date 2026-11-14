@@ -75,6 +75,7 @@ var (
 var (
 	DefaultLang       = config.GenFlag("frontend.default_language", "en", "Default UI language (en/ro)")
 	BannedHotProblems = config.GenFlag("frontend.banned_hot_problems", []int{}, "Problem IDs excluded from the hot problems list")
+	HiddenFlashes     = config.GenFlag("frontend.flashes.hidden", []string{}, "Flash announcements hidden on this instance (see /admin/flashes)")
 )
 
 func DefaultLanguage(ctx context.Context) string {

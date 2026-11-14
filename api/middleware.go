@@ -45,7 +45,7 @@ func (s *API) MustBeVisitor(next http.Handler) http.Handler {
 func (s *API) MustBeAdmin(next http.Handler) http.Handler {
 	return s.MustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !user.UserBrief(r).IsAdmin() {
-			errorData(w, "You must be an admin to do this", http.StatusUnauthorized)
+			errorData(w, "You must be an admin to do this", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

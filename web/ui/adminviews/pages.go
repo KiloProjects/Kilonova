@@ -72,51 +72,20 @@ func Panel(ctx context.Context, params PanelParams) Node {
 			ui.UserList(ctx, ui.UserListParams{ID: "admin-group", Title: ui.T(ctx, "admins"), Users: params.Admins, Action: remove("setAdmin")}),
 			ui.UserList(ctx, ui.UserListParams{ID: "proposer-group", Title: ui.T(ctx, "proposers"), Users: params.Proposers, Action: remove("setProposer")}),
 		),
-		Form(ID("flagsForm"), Class("segment-panel"), AutoComplete("off"),
-			H2(Class("text-2xl"), ui.T(ctx, "config.title")),
-			flagSection(ctx, "boolFlags", len(params.BoolFlags), Map(params.BoolFlags, func(f config.Flag[bool]) Node {
-				return Div(Class("block"),
-					Label(Class("inline-flex items-center text-lg"),
-						Input(Class("form-checkbox"), Type("checkbox"), Data("name", f.InternalName()), Data("org_value", strconv.FormatBool(f.Get(ctx))), If(f.Get(ctx), Checked()), AutoComplete("off")), Text(" "),
-						Span(Class("ml-2"), Text(f.HumanName())), Text(" "),
-						Span(Class("ml-2 text-sm text-muted"), Text("("+f.InternalName()+")")),
-					),
-				)
-			})),
-			flagSection(ctx, "stringFlags", len(params.StringFlags), Map(params.StringFlags, func(f config.Flag[string]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), f.Get(ctx), Type("text"))
-			})),
-			flagSection(ctx, "intFlags", len(params.IntFlags), Map(params.IntFlags, func(f config.Flag[int]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), strconv.Itoa(f.Get(ctx)), Type("number"))
-			})),
-			flagSection(ctx, "intArrayFlags", len(params.IntArrayFlags), Map(params.IntArrayFlags, func(f config.Flag[[]int]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Get(ctx)), Type("text"))
-			})),
-			flagSection(ctx, "strArrayFlags", len(params.StrArrayFlags), Map(params.StrArrayFlags, func(f config.Flag[[]string]) Node {
-				return valueFlag(f.HumanName(), f.InternalName(), jsonList(f.Get(ctx)), Type("text"))
-			})),
-			Button(Type("submit"), Class("btn btn-blue"), ui.T(ctx, "button.update")),
-		),
+		flatFlags(ctx, params),
+		flagsTransfer(ctx),
 		Script(Raw(flagsJS)),
 	}
 }
 
-// flagSection renders one flag kind; key is both the heading translation key and the div id prefix the script reads.
+// flagSection renders one flag kind under its heading.
 func flagSection(ctx context.Context, key string, n int, items Node) Node {
 	return Div(Class("segment-panel"),
 		H3(ui.T(ctx, key)),
-		Div(ID(key+"Div"), Class("mb-2"),
+		Div(Class("mb-2"),
 			items,
 			If(n == 0, Span(Class("text-lg my-2"), Text("N/A"))),
 		),
-	)
-}
-
-func valueFlag(human, name, value string, inputAttrs ...Node) Node {
-	return Label(Class("block my-2"),
-		Span(Text(human)), Text(" "),
-		Span(Class("mr-2 text-sm text-muted"), Text("("+name+")")), Text(" "),
-		Input(Class("form-input w-full"), Group(inputAttrs), Data("name", name), Data("org_value", value), Value(value), AutoComplete("off")),
 	)
 }
 

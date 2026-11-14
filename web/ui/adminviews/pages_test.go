@@ -24,8 +24,8 @@ func TestPanel(t *testing.T) {
 			IntArrayFlags: []config.Flag[[]int]{config.GenFlag("test.adminviews.ints", []int{1, 2}, "Ints")},
 			StrArrayFlags: []config.Flag[[]string]{config.GenFlag("test.adminviews.strs", []string{`a,"b`}, "Strs")},
 		}))
-		uitest.Contains(t, got, `data-name="test.adminviews.bool"`, `data-org_value="true"`, "checked", "Bool &lt;b&gt;",
-			`data-org_value="[1,2]"`, `value="[1,2]"`, `value="[&#34;a,\&#34;b&#34;]"`, `id="admin-group"`, `href="/profile/root"`, `id="stringFlagsDiv"`, "N/A", "`/user/byName/${user}`")
+		uitest.Contains(t, got, `data-flag="test.adminviews.bool"`, `data-type="bool"`, `data-org_value="true"`, "checked", "Bool &lt;b&gt;",
+			`data-type="int_array"`, `data-org_value="[1,2]"`, `value="[1,2]"`, `value="[&#34;a,\&#34;b&#34;]"`, `id="admin-group"`, `href="/profile/root"`, "N/A", "`/user/byName/${user}`")
 		require.NotContains(t, got, "setAdmin(1, false)", "only the root admin may strip roles")
 	})
 
