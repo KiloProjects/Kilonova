@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"text/template"
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/user"
@@ -27,8 +26,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/crypto/bcrypt"
-
-	_ "embed"
 )
 
 func (s *BaseAPI) UserBrief(ctx context.Context, id int) (*kilonova.UserBrief, error) {
@@ -308,10 +305,6 @@ func (s *BaseAPI) GenerateUser(ctx context.Context, uname, pwd, lang string, the
 	return userFull, err
 }
 
-//go:embed emails/generated.html
-var generatedUserEmail string
-var generatedUserTempl = template.Must(template.New("emailTempl").Parse(generatedUserEmail))
-
 // Basically [a-zA-Z0-9] but exclude i/I/l/L and 0/o/O since they may be easily mistaken
 const userPasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ123456789"
 
@@ -375,30 +368,6 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 	}
 
 	if args.PasswordByMail {
-		emailArgs := struct {
-			Name       string
-			Username   string
-			Password   string
-			Contest    *kilonova.Contest
-			HostPrefix string
-			Branding   string
-		}{
-			Name:       userFull.Name,
-			Username:   userFull.Name,
-			Password:   args.Password,
-			Contest:    contest,
-			HostPrefix: s.hostURL.String(),
-			Branding:   flags.EmailBranding.Of(s.flagset),
-		}
-		if userFull.DisplayName != "" {
-			emailArgs.Name = userFull.DisplayName
-		}
-		emailArgs.Branding = cmp.Or(emailArgs.Branding, flags.NavbarBranding.Of(s.flagset), "Kilonova")
-		var b bytes.Buffer
-		if err := generatedUserTempl.ExecuteTemplate(&b, userFull.PreferredLanguage, emailArgs); err != nil {
-			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))
-			return args.Password, userFull, fmt.Errorf("could not render email: %w", err)
-		}
 		var sendTo string
 		if args.Email != nil {
 			sendTo = *args.Email
@@ -407,16 +376,25 @@ func (s *BaseAPI) GenerateUserFlow(ctx context.Context, args UserGenerationReque
 			sendTo = *args.PasswordByMailTo
 		}
 
-		var subject = kilonova.GetText(userFull.PreferredLanguage, "mail.subject.generated")
-		if args.MailSubject != nil {
-			subject = *args.MailSubject
+		mail := generatedUserEmail{
+			Subject:  kilonova.GetText(userFull.PreferredLanguage, "mail.subject.generated"),
+			Lang:     userFull.PreferredLanguage,
+			Name:     cmp.Or(userFull.DisplayName, userFull.Name),
+			Username: userFull.Name,
+			Password: args.Password,
+			Contest:  contest,
+			Host:     s.hostURL.String(),
+			Branding: cmp.Or(flags.EmailBranding.Of(s.flagset), flags.NavbarBranding.Of(s.flagset), "Kilonova"),
 		}
-
-		if err := s.SendMail(ctx, &kilonova.MailerMessage{
-			To:          sendTo,
-			Subject:     subject,
-			HTMLContent: b.String(),
-		}); err != nil {
+		if args.MailSubject != nil {
+			mail.Subject = *args.MailSubject
+		}
+		msg, err := mail.message(sendTo)
+		if err != nil {
+			slog.ErrorContext(ctx, "Error rendering password send email", slog.Any("err", err))
+			return args.Password, userFull, fmt.Errorf("could not render email: %w", err)
+		}
+		if err := s.SendMail(ctx, msg); err != nil {
 			slog.WarnContext(ctx, "Could not send email", slog.Any("err", err))
 			return args.Password, userFull, err
 		}

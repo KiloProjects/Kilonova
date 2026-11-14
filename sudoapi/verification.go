@@ -1,23 +1,15 @@
 package sudoapi
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-	"text/template"
 	"time"
-
-	_ "embed"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
-
-//go:embed emails/emailVerification.txt
-var verificationEmailText string
-var verificationEmailTempl = template.Must(template.New("emailTempl").Parse(verificationEmailText))
 
 // SendVerificationEmail updates the user metadata with an unverified email status and sends an email with the hard-coded template to the desired user.
 // Please provide a good context.
@@ -60,26 +52,20 @@ func (s *BaseAPI) SendVerificationEmail(ctx context.Context, userID int, name, e
 		return errors.New("couldn't create verification code")
 	}
 
-	var b bytes.Buffer
-	if err := verificationEmailTempl.ExecuteTemplate(&b, lang, struct {
-		Name       string
-		VID        string
-		HostPrefix string
-		Branding   string
-	}{
-		Name:       name,
-		VID:        vid,
-		HostPrefix: s.hostURL.String(),
-		Branding:   flags.EmailBranding.Of(s.flagset),
-	}); err != nil {
+	msg, err := linkEmail{
+		Kind:     "verification",
+		Lang:     lang,
+		Name:     name,
+		URL:      s.hostURL.JoinPath("verify", vid).String(),
+		Host:     s.hostURL.String(),
+		Branding: flags.EmailBranding.Of(s.flagset),
+	}.message(email)
+	if err != nil {
 		slog.WarnContext(ctx, "Error rendering verification email", slog.Any("err", err))
 		return fmt.Errorf("error rendering email")
 	}
-	if err := s.SendMail(ctx, &kilonova.MailerMessage{
-		Subject:      kilonova.GetText(lang, "mail.subject.verification"),
-		PlainContent: b.String(),
-		To:           email,
-	}); err != nil {
+	if err := s.SendMail(ctx, msg); err != nil {
+		slog.WarnContext(ctx, "Error sending email", slog.Any("err", err), slog.String("kind", "verification"))
 		return err
 	}
 

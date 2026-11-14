@@ -1,22 +1,13 @@
 package sudoapi
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-	"text/template"
 
-	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
-
-	_ "embed"
 )
-
-//go:embed emails/forgotPassword.txt
-var passwordForgotEmailText string
-var forgotPwdTempl = template.Must(template.New("emailTempl").Parse(passwordForgotEmailText))
 
 // SendPasswordResetEmail sends a password reset email to the user.
 // Please provide a good context.
@@ -32,27 +23,20 @@ func (s *BaseAPI) SendPasswordResetEmail(ctx context.Context, userID int, name, 
 		return errors.New("couldn't create password request code")
 	}
 
-	var b bytes.Buffer
-	if err := forgotPwdTempl.ExecuteTemplate(&b, lang, struct {
-		Name       string
-		VID        string
-		HostPrefix string
-		Branding   string
-	}{
-		Name:       name,
-		VID:        vid,
-		HostPrefix: s.hostURL.String(),
-		Branding:   flags.EmailBranding.Of(s.flagset),
-	}); err != nil {
+	msg, err := linkEmail{
+		Kind:     "password_recovery",
+		Lang:     lang,
+		Name:     name,
+		URL:      s.hostURL.JoinPath("resetPassword", vid).String(),
+		Host:     s.hostURL.String(),
+		Branding: flags.EmailBranding.Of(s.flagset),
+	}.message(email)
+	if err != nil {
 		slog.ErrorContext(ctx, "Error rendering password request email", slog.Any("err", err))
 		return fmt.Errorf("error rendering email")
 	}
-	if err := s.SendMail(ctx, &kilonova.MailerMessage{
-		Subject:      kilonova.GetText(lang, "mail.subject.password_recovery"),
-		PlainContent: b.String(),
-		To:           email,
-	}); err != nil {
-		slog.WarnContext(ctx, "Error sending password reset email", slog.Any("err", err))
+	if err := s.SendMail(ctx, msg); err != nil {
+		slog.WarnContext(ctx, "Error sending email", slog.Any("err", err), slog.String("kind", "password_recovery"))
 		return err
 	}
 

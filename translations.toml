@@ -3237,6 +3237,46 @@ ro = "Conturile create"
 en = "Passwords will be lost on page reload, they are not saved anywhere."
 ro = "Parolele vor fi pierdute când se reîncarcă pagina, nu sunt salvate niciunde."
 
+[mail.greeting]
+en = "Hey, %s!"
+ro = "Hey, %s!"
+
+[mail.signature]
+en = "Team %s"
+ro = "Echipa %s"
+
+[mail.body.password_recovery]
+en = "Somebody requested a password reset for your account. If it was you who sent it, go to the following link to change your password:"
+ro = "Cineva a solicitat o cerere de resetare a parolei pentru contul tău. Dacă tu ai fost cel care a trimis-o, accesează link-ul următor pentru a schimba parola:"
+
+[mail.ignore.password_recovery]
+en = "If you didn't request this, you can safely ignore this email."
+ro = "Dacă solicitarea nu a fost trimisă de tine, poți ignora acest email."
+
+[mail.body.generated]
+en = "Your Kilonova account was created. These are your login details:"
+ro = "Contul tău Kilonova a fost creat. Acestea sunt datele tale de autentificare:"
+
+[mail.generated.contest]
+en = "When creating your account, you were registered automatically for the following contest:"
+ro = "În momentul creării contului, ai fost înscris automat în concursul:"
+
+[mail.generated.contest_link]
+en = "The permalink for the contest page is:"
+ro = "Link-ul permanent pentru pagina concursului este:"
+
+[mail.generated.outro]
+en = "We wish you best of luck!"
+ro = "Mult spor în continuare!"
+
+[mail.body.verification]
+en = "You haven't verified your email yet. Please go to this link to make sure this is your address:"
+ro = "Încă nu ți-ai verificat emailul. Te rog să intri pe acest link ca să fim siguri că ești tu:"
+
+[mail.ignore.verification]
+en = "If this account is not yours, you can safely ignore this email."
+ro = "Dacă acest cont nu este al tău, poți ignora acest email."
+
 [mail.subject.verification]
 en = "Verify your email address"
 ro = "Verifică-ți adresa de email"
