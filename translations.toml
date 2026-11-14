@@ -747,6 +747,10 @@ ro = "Include submisiile editorilor"
 en = "Include ALL submissions"
 ro = "Include TOATE submisiile"
 
+[gen_license_ack]
+en = "I will respect the license and copyright of this problem's content, and I will credit its authors and source as the license requires wherever I reuse it."
+ro = "Voi respecta licența și drepturile de autor ale conținutului acestei probleme și voi menționa autorii și sursa, conform licenței, oriunde îl reutilizez."
+
 [tests]
 en = "Tests"
 ro = "Teste"

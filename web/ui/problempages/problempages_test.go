@@ -155,7 +155,7 @@ func TestArchive(t *testing.T) {
 	tb := &problems.TopbarParams{Problem: problem(), CanViewTests: true}
 	p := ArchiveParams{Topbar: tb, Settings: &kilonova.ProblemEvalSettings{CheckerName: "checker.cpp"}, Tests: []*kilonova.Test{{ID: 11, VisibleID: 1}}}
 	got := uitest.Render(t, Archive(ctx, p))
-	uitest.Contains(t, got, `method="GET" action="/assets/problem/7/problemArchive"`, `name="tests" value="true" type="checkbox" checked`, "text-sm text-muted", `href="/assets/problem/7/test/11/input" download`)
+	uitest.Contains(t, got, `method="GET" action="/assets/problem/7/problemArchive"`, `name="tests" value="true" type="checkbox" checked`, "text-sm text-muted", `name="license_ack" value="true" type="checkbox" required`, `href="/assets/problem/7/test/11/input" download`)
 	uitest.NotContains(t, got, "captcha_img", "<script", `name="all_submissions"`, `name="private_attachments"`)
 
 	tb.IsProblemEditor, tb.CanViewTests = true, false

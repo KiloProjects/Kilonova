@@ -383,11 +383,19 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Can't decode parameters", 400)
+			return
+		}
+		// Checked before the captcha so a missing acknowledgement doesn't burn a solved one
+		if r.Form.Get("license_ack") != "true" {
+			http.Error(w, "You must agree to respect the problem's license and credit its authors before downloading", http.StatusBadRequest)
+			return
+		}
+		// Remove so the schema decoder below doesn't reject the unknown key
+		r.Form.Del("license_ack")
+
 		if s.base.CaptchaEnabled() {
-			if err := r.ParseForm(); err != nil {
-				http.Error(w, "Can't decode parameters", 400)
-				return
-			}
 			if !s.base.CheckCaptcha(r.Form.Get("captcha_id"), r.Form.Get("captcha_response")) && !user.UserBrief(r).IsAdmin() {
 				http.Error(w, "Invalid CAPTCHA response", http.StatusBadRequest)
 				return
@@ -420,10 +428,19 @@ func (s *Assets) ServeProblemArchive() http.HandlerFunc {
 		args.SubsLook = true
 		args.SubsLookingUser = user.UserBrief(r)
 
-		s.base.LogVerbose(r.Context(), "Problem archive downloaded",
-			slog.Any("user", user.UserBrief(r)),
+		// Logged after the permission downgrades above, so it records what was actually served
+		s.base.LogQuietAction(r.Context(), "Problem archive downloaded",
 			slog.Any("problem", util.Problem(r)),
-			slog.Bool("tests", args.Tests),
+			slog.Group("options",
+				slog.Bool("tests", args.Tests),
+				slog.Bool("attachments", args.Attachments),
+				slog.Bool("private_attachments", args.PrivateAttachments),
+				slog.Bool("details", args.ProblemDetails),
+				slog.Bool("tags", args.Tags),
+				slog.Bool("editors", args.Editors),
+				slog.Bool("submissions", args.Submissions),
+				slog.Bool("all_submissions", args.AllSubmissions),
+			),
 		)
 
 		w.Header().Add("Content-Type", "application/zip")

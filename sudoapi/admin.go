@@ -33,6 +33,8 @@ const (
 	logLevelWarning
 	logLevelInfo
 	logLevelVerbose
+	// logLevelAuditVerbose is stored in the audit log but announced on the verbose webhook
+	logLevelAuditVerbose
 )
 
 func (s *BaseAPI) DataStore() *datastore.Manager {
@@ -172,6 +174,12 @@ func (s *BaseAPI) LogToDiscord(ctx context.Context, msg string, args ...slog.Att
 
 func (s *BaseAPI) LogUserAction(ctx context.Context, msg string, args ...slog.Attr) {
 	s.logAction(ctx, logLevelImportant, msg, args)
+}
+
+// LogQuietAction records an audit log entry like LogUserAction,
+// but sends it to the verbose webhook instead of the important one.
+func (s *BaseAPI) LogQuietAction(ctx context.Context, msg string, args ...slog.Attr) {
+	s.logAction(ctx, logLevelAuditVerbose, msg, args)
 }
 
 func (s *BaseAPI) LogInfo(ctx context.Context, msg string, attrs ...slog.Attr) {
@@ -355,7 +363,7 @@ func (s *BaseAPI) processLogEntry(ctx context.Context, val *logEntry, importantW
 		id = &val.Author.ID
 	}
 
-	if val.Level.IsAuditLogLvl() && val.Level != logLevelDiscord {
+	if (val.Level.IsAuditLogLvl() && val.Level != logLevelDiscord) || val.Level == logLevelAuditVerbose {
 		attrs, err := json.Marshal(marshalAttrs(val.Attrs...))
 		if err != nil {
 			attrs = []byte(`{"attrs": "err"}`)

@@ -39,6 +39,11 @@ func Archive(ctx context.Context, p ArchiveParams) Node {
 			archiveCheckbox(ctx, "editors", "gen_editors", true),
 			archiveCheckbox(ctx, "submissions", "gen_submissions", true),
 			If(t.IsProblemEditor, archiveCheckbox(ctx, "all_submissions", "gen_all_submissions", false)),
+			// Not an archive option: the endpoint refuses the download without it.
+			Div(Class("block my-4"), Label(Class("inline-flex items-center text-lg"),
+				Input(Class("form-checkbox"), Name("license_ack"), Value("true"), Type("checkbox"), Required()),
+				Span(Class("ml-2"), ui.T(ctx, "gen_license_ack")),
+			)),
 			Iff(p.CaptchaID != "", func() Node { return ui.Captcha(ctx, p.CaptchaID) }),
 			Button(Class("btn btn-blue"), Type("submit"), ui.T(ctx, "download")),
 		),
