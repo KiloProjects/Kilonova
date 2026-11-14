@@ -31,7 +31,7 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 		// Handle OAuth token
 		if strings.HasPrefix(h, "Bearer ") {
 			h = h[7:]
-			// TODO: It's not good, it does not handle revoked tokens
+			// The signature and expiry are checked here; revocation is the row lookup below
 			claims, err := op.VerifyAccessToken[*oidc.AccessTokenClaims](ctx.Context(), h, s.base.OIDCProvider().AccessTokenVerifier(ctx.Context()))
 			if err != nil {
 				next(ctx)
@@ -53,12 +53,12 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 
 			token, err := s.base.GetAccessToken(ctx.Context(), tokenID)
 			if err != nil {
-				// If err is nil, the token is probably revoked
+				// Revoking a token deletes its row, so a missing row means revoked
 				next(ctx)
 				return
 			}
 			if token.UserID == nil || userID != *token.UserID {
-				slog.ErrorContext(ctx.Context(), "Received access token with invalid user id", slog.Int("user_id", userID), slog.Int("token_user_id", *token.UserID))
+				slog.ErrorContext(ctx.Context(), "Received access token with invalid user id", slog.Int("user_id", userID), slog.Any("token_user_id", token.UserID))
 				next(ctx)
 				return
 			}

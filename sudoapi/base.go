@@ -64,6 +64,7 @@ type BaseAPI struct {
 	avatarBucket          datastore.Bucket
 
 	oidcProvider *op.Provider
+	authStorage  *auth.AuthStorage
 
 	flagset *config.Flagset
 	hostURL *url.URL
@@ -172,6 +173,7 @@ func GetBaseAPI(ctx context.Context, pgx *postgres.DB, mgr *datastore.Manager, m
 		return nil, err
 	}
 	base.oidcProvider = provider
+	base.authStorage = authStorage
 	return base, nil
 }
 

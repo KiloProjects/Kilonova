@@ -3,14 +3,11 @@ package sudoapi
 import (
 	"context"
 	"log/slog"
-	"net/http"
 
 	"uuid"
 
 	"github.com/KiloProjects/kilonova/internal/auth"
 	"github.com/go-chi/chi/v5"
-	"github.com/rs/cors"
-	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
@@ -19,70 +16,24 @@ func (s *BaseAPI) OIDCProvider() *op.Provider {
 	return s.oidcProvider
 }
 
+// RegisterOIDCRoutes hands the provider's own paths to it. The provider is already a
+// router carrying CORS and the issuer interceptor, so nothing is re-declared here;
+// it is not mounted because its paths live at the root, next to the pages.
 func (s *BaseAPI) RegisterOIDCRoutes(r chi.Router) {
-	r.Group(func(r chi.Router) {
-		// Things mostly copy pasted from zitadel/oidc due to not accepting receiving a router (so we don't have to mount it)
-		r.Use(cors.New(cors.Options{
-			AllowCredentials: true,
-			AllowedHeaders: []string{
-				"Origin",
-				"Accept",
-				"Accept-Language",
-				"Authorization",
-				"Content-Type",
-				"X-Requested-With",
-			},
-			AllowedMethods: []string{
-				http.MethodGet,
-				http.MethodHead,
-				http.MethodPost,
-			},
-			ExposedHeaders: []string{
-				"Location",
-				"Content-Length",
-			},
-			AllowOriginFunc: func(_ string) bool {
-				return true
-			},
-		}).Handler)
-		r.Use(op.NewIssuerInterceptor(s.oidcProvider.IssuerFromRequest).Handler)
-		// r.HandleFunc(healthEndpoint, healthHandler)
-		// r.HandleFunc(readinessEndpoint, readyHandler(o.Probes()))
-		r.HandleFunc(oidc.DiscoveryEndpoint, func(w http.ResponseWriter, r *http.Request) {
-			op.Discover(w, op.CreateDiscoveryConfig(r.Context(), s.oidcProvider, s.oidcProvider.Storage()))
-		})
-		r.HandleFunc(s.oidcProvider.AuthorizationEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Authorize(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.AuthorizationEndpoint().Relative()+"/callback", op.AuthorizeCallbackHandler(s.oidcProvider))
-		r.HandleFunc(s.oidcProvider.TokenEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Exchange(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.IntrospectionEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Introspect(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.UserinfoEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Userinfo(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.RevocationEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Revoke(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.EndSessionEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.EndSession(w, r, s.oidcProvider)
-		})
-		r.HandleFunc(s.oidcProvider.KeysEndpoint().Relative(), func(w http.ResponseWriter, r *http.Request) {
-			op.Keys(w, r, s.oidcProvider.Storage())
-		})
-		r.HandleFunc(s.oidcProvider.DeviceAuthorizationEndpoint().Relative(), op.DeviceAuthorizationHandler(s.oidcProvider))
-	})
+	for _, route := range s.oidcProvider.Handler.(chi.Routes).Routes() {
+		if route.Pattern == "/healthz" || route.Pattern == "/ready" {
+			continue // probes are served by cmd/kn
+		}
+		r.Handle(route.Pattern, s.oidcProvider)
+	}
 }
 
 func (s *BaseAPI) ApproveAuthRequest(ctx context.Context, reqID string, userID int) error {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).ApproveAuthRequest(ctx, reqID, userID)
+	return s.authStorage.ApproveAuthRequest(ctx, reqID, userID)
 }
 
 func (s *BaseAPI) CreateClient(ctx context.Context, name string, appType auth.ApplicationType, authorID int, devMode bool, allowedRedirects []string, allowedPostLogoutRedirects []string) (uuid.UUID, string, error) {
-	id, secret, err := s.oidcProvider.Storage().(*auth.AuthStorage).CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
+	id, secret, err := s.authStorage.CreateClient(ctx, name, appType, authorID, devMode, allowedRedirects, allowedPostLogoutRedirects)
 	if err != nil {
 		return uuid.Nil(), "", err
 	}
@@ -92,11 +43,11 @@ func (s *BaseAPI) CreateClient(ctx context.Context, name string, appType auth.Ap
 
 // OAuthClients returns all clients, or only those authored by authorID if it is not nil
 func (s *BaseAPI) OAuthClients(ctx context.Context, authorID *int) ([]*auth.Client, error) {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).ListClients(ctx, authorID)
+	return s.authStorage.ListClients(ctx, authorID)
 }
 
 func (s *BaseAPI) DeleteOAuthClient(ctx context.Context, id uuid.UUID) error {
-	if err := s.oidcProvider.Storage().(*auth.AuthStorage).DeleteClient(ctx, id); err != nil {
+	if err := s.authStorage.DeleteClient(ctx, id); err != nil {
 		return err
 	}
 	s.LogUserAction(ctx, "Deleted OAuth client", slog.String("id", id.String()))
@@ -104,7 +55,7 @@ func (s *BaseAPI) DeleteOAuthClient(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *BaseAPI) GetAuthRequest(ctx context.Context, reqID string) (*auth.Request, error) {
-	req, err := s.oidcProvider.Storage().(*auth.AuthStorage).AuthRequestByID(ctx, reqID)
+	req, err := s.authStorage.AuthRequestByID(ctx, reqID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +63,7 @@ func (s *BaseAPI) GetAuthRequest(ctx context.Context, reqID string) (*auth.Reque
 }
 
 func (s *BaseAPI) GetOAuthClient(ctx context.Context, clientID uuid.UUID) (*auth.Client, error) {
-	client, err := s.oidcProvider.Storage().(*auth.AuthStorage).GetClientByClientID(ctx, clientID.String())
+	client, err := s.authStorage.GetClientByClientID(ctx, clientID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +71,13 @@ func (s *BaseAPI) GetOAuthClient(ctx context.Context, clientID uuid.UUID) (*auth
 }
 
 func (s *BaseAPI) GetAccessToken(ctx context.Context, tokenID uuid.UUID) (*auth.Token, error) {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).GetAccessToken(ctx, tokenID)
+	return s.authStorage.GetAccessToken(ctx, tokenID)
 }
 
 func (s *BaseAPI) AuthorizedOAuthClients(ctx context.Context, userID int) ([]*auth.Client, error) {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).ListAuthorizedClients(ctx, userID)
+	return s.authStorage.ListAuthorizedClients(ctx, userID)
 }
 
 func (s *BaseAPI) RevokeOAuthClient(ctx context.Context, userID int, clientID uuid.UUID) error {
-	return s.oidcProvider.Storage().(*auth.AuthStorage).RevokeClientTokens(ctx, userID, clientID)
+	return s.authStorage.RevokeClientTokens(ctx, userID, clientID)
 }
