@@ -500,7 +500,7 @@ func (s *DB) ContestICPCLeaderboard(ctx context.Context, contest *kilonova.Conte
 
 	where, args := "1 = 1", []any{contest.ID, freezeTime, contest.Type == kilonova.ContestTypeVirtual}
 	if generated != nil {
-		where = "EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND generated = ?)"
+		where = "EXISTS (SELECT 1 FROM users WHERE user_id = users.id AND generated = $4)"
 		args = append(args, *generated)
 	}
 
