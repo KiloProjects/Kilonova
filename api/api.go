@@ -207,7 +207,6 @@ func (s *API) HandlerV1() http.Handler {
 	})
 
 	r.Route("/auth", func(r chi.Router) {
-		r.With(s.MustBeAuthed).Post("/logout", s.logout)
 		r.With(s.MustBeVisitor).Post("/login", s.login)
 
 		r.With(s.MustBeAuthed).Post("/extendSession", s.extendSession)

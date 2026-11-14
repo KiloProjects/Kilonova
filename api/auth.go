@@ -39,11 +39,6 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	returnData(w, sid)
 }
 
-func (s *API) logout(w http.ResponseWriter, r *http.Request) {
-	s.base.RemoveSession(r.Context(), getAuthHeader(r))
-	returnData(w, "Logged out")
-}
-
 func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
 	h := getAuthHeader(r)
 	if h == "" {
