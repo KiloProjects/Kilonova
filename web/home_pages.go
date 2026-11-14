@@ -118,7 +118,6 @@ func (rt *Web) index() http.HandlerFunc {
 
 			ContestSidebar: flags.SidebarContests.Get(r.Context()),
 			MainPageLogin:  flags.MainPageLogin.Get(r.Context()),
-			SignupEnabled:  flags.SignupEnabled.Get(r.Context()),
 
 			ShowProblems:  flags.FrontPageProblems.Get(r.Context()),
 			OtherProblems: others,

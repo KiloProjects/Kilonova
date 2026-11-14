@@ -25,7 +25,7 @@ func TestIndex(t *testing.T) {
 		uitest.NotContains(t, got, "text-gray-600 dark:text-gray-300 mb-1")
 	})
 	t.Run("login form only for visitors when enabled", func(t *testing.T) {
-		uitest.Contains(t, uitest.Render(t, Index(ctx, Params{MainPageLogin: true})), `id="login_form"`, `postCall("/auth/login"`)
+		uitest.Contains(t, uitest.Render(t, Index(ctx, Params{MainPageLogin: true})), `id="login_form"`, `action="/login"`, `<h1 class="mb-4">`)
 		uitest.NotContains(t, uitest.Render(t, Index(ctx, Params{MainPageLogin: true, Authed: true})), `id="login_form"`)
 	})
 	t.Run("unlisted problems: solved count when authed, total otherwise; open when no lists", func(t *testing.T) {

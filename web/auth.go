@@ -4,8 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
@@ -21,7 +19,7 @@ func (rt *Web) getLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    rt.canonicalURL("/login"),
-			Content: authviews.LoginPage(r.Context(), oidcID, back, ""),
+			Content: authviews.LoginPage(r.Context(), oidcID, back, "", false),
 		})
 		return
 	}
@@ -66,6 +64,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	oidcID := r.FormValue("oidcID")
 	back := r.FormValue("back")
+	persistent := r.FormValue("persistent") == "true" // the "keep me signed in" checkbox
 
 	loggedUser, status := rt.base.Login(r.Context(), username, password)
 	if status != nil {
@@ -73,7 +72,7 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    rt.canonicalURL("/login"),
-			Content: authviews.LoginPage(r.Context(), oidcID, back, status.Error()),
+			Content: authviews.LoginPage(r.Context(), oidcID, back, status.Error(), persistent),
 		})
 		return
 	}
@@ -84,37 +83,23 @@ func (rt *Web) postLogin(w http.ResponseWriter, r *http.Request) {
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    rt.canonicalURL("/login"),
-			Content: authviews.LoginPage(r.Context(), oidcID, back, "Login for this account has been restricted by an administrator"),
+			Content: authviews.LoginPage(r.Context(), oidcID, back, "Login for this account has been restricted by an administrator", persistent),
 		})
 		return
 	}
 
-	sid, err := rt.base.CreateSession(r.Context(), loggedUser.ID)
+	sid, err := rt.base.CreateSession(r.Context(), loggedUser.ID, persistent)
 	if err != nil {
 		w.WriteHeader(kilonova.ErrorCode(err))
 		rt.runLayout(w, r, &LayoutParams{
 			Title:   kilonova.GetText(util.Language(r), "auth.login"),
 			Head:    rt.canonicalURL("/login"),
-			Content: authviews.LoginPage(r.Context(), oidcID, back, err.Error()),
+			Content: authviews.LoginPage(r.Context(), oidcID, back, err.Error(), persistent),
 		})
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "kn-sessionid",
-		Value:    sid,
-		Expires:  time.Now().Add(29 * 24 * time.Hour),
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-	checkDate := time.Now().Add(10 * 24 * time.Hour)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "kn-session-check-date",
-		Value:    strconv.FormatInt(checkDate.UnixMilli(), 10),
-		Expires:  time.Now().Add(29 * 24 * time.Hour),
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	rt.base.SetSessCookie(w, sid, persistent)
 
 	r = r.WithContext(context.WithValue(r.Context(), user.AuthedUserKey, loggedUser))
 

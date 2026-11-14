@@ -11,8 +11,8 @@ var ctx = uitest.Ctx("en")
 
 func TestLoginPage(t *testing.T) {
 	t.Run("hidden fields only when set, error escaped", func(t *testing.T) {
-		uitest.Contains(t, uitest.Render(t, LoginPage(ctx, "oid", "/back", "<b>bad</b>")), `name="oidcID" value="oid"`, `name="back" value="/back"`, "&lt;b&gt;bad")
-		uitest.NotContains(t, uitest.Render(t, LoginPage(ctx, "", "", "")), "oidcID", `name="back"`, "text-red-500")
+		uitest.Contains(t, uitest.Render(t, LoginPage(ctx, "oid", "/back", "<b>bad</b>", true)), `name="oidcID" value="oid"`, `name="back" value="/back"`, "&lt;b&gt;bad", `name="persistent" value="true" checked`)
+		uitest.NotContains(t, uitest.Render(t, LoginPage(ctx, "", "", "", false)), "oidcID", `name="back"`, "text-red-500", "checked")
 	})
 }
 

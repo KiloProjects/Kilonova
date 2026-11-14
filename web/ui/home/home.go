@@ -11,6 +11,7 @@ import (
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
 	"github.com/KiloProjects/kilonova/web/ui"
+	"github.com/KiloProjects/kilonova/web/ui/authviews"
 	"github.com/KiloProjects/kilonova/web/ui/contests"
 	"github.com/KiloProjects/kilonova/web/ui/problems"
 	"github.com/shopspring/decimal"
@@ -34,7 +35,6 @@ type Params struct {
 	ContestSidebar  bool // flag: contests go in the sidebar on large screens
 
 	MainPageLogin bool
-	SignupEnabled bool
 
 	ShowProblems      bool
 	ChildProblemLists []problems.ListGroupParams
@@ -86,7 +86,7 @@ func Index(ctx context.Context, p Params) Node {
 					Div(Class("mb-1"), Raw(p.FeedbackHTML), Text(" ")),
 				)),
 				contestsPanel(ctx, p, md),
-				If(p.MainPageLogin && !p.Authed, loginForm(ctx, p.SignupEnabled)),
+				If(p.MainPageLogin && !p.Authed, authviews.LoginForm(ctx, "", "", "", false, false)),
 				problemsPanel(ctx, p, md),
 				If(p.ShowLatest && len(p.LatestProblems) > 0, Div(Class("segment-panel"),
 					H2(ui.T(ctx, "latestPbs")),
@@ -137,48 +137,6 @@ func contestsPanel(ctx context.Context, p Params, md func(string) Node) Node {
 		Div(Class("mt-3"), md("announcements.all_contests")),
 	)
 }
-
-func loginForm(ctx context.Context, signup bool) Node {
-	return Group{
-		Form(Class("segment-panel"), ID("login_form"),
-			H1(Class("mb-4"), ui.T(ctx, "authenticate")),
-			Label(Class("block mb-2"),
-				Span(Class("form-label"), ui.T(ctx, "username_email")),
-				Input(Class("form-input w-full"), Type("text"), ID("login_uname"), Name("username")),
-			),
-			Label(Class("block mb-2"),
-				Span(Class("form-label"), ui.T(ctx, "password")),
-				Input(Class("form-input w-full"), Type("password"), ID("login_upwd"), Name("password")),
-			),
-			Button(Class("block btn btn-blue mb-3"), ui.T(ctx, "auth.login")),
-			If(signup, P(Class("text-gray-600 dark:text-gray-300"), ui.TRaw(ctx, "signupReminder"))),
-			P(Class("text-gray-600 dark:text-gray-300"), ui.TRaw(ctx, "forgot_pwd_announcement")),
-		),
-		Script(Raw(loginScript)),
-	}
-}
-
-const loginScript = `
-document.getElementById("login_form").addEventListener("submit", login)
-async function login(e) {
-	e.preventDefault()
-	let username = document.getElementById("login_uname").value;
-	let password = document.getElementById("login_upwd").value;
-
-	let res = await bundled.postCall("/auth/login", {username, password})
-	if(res.status == "error") {
-		bundled.apiToast(res)
-		return
-	}
-	bundled.setSession(res.data)
-	console.log(window.location.pathname)
-	if(window.location.pathname.startsWith("/login")) {
-		bundled.navigateBack()
-	} else {
-		window.location.reload()
-	}
-}
-`
 
 func problemsPanel(ctx context.Context, p Params, md func(string) Node) Node {
 	if !p.ShowProblems || len(p.OtherProblems)+len(p.ChildProblemLists) == 0 {

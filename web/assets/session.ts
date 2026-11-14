@@ -1,29 +1,6 @@
 import cookie from "js-cookie";
 import { postCall } from "./api/client";
-import dayjs from "dayjs";
 import { languages } from "./langs";
-
-export function setSession(sessionID: string) {
-	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
-	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax", secure: true });
-	cookie.set("kn-sessionid", sessionID, { expires: 29, sameSite: "lax", secure: true });
-}
-
-function getSession(): string {
-	return cookie.get("kn-sessionid") || "guest";
-}
-
-async function extendSession() {
-	const res = await postCall<string>("/auth/extendSession", {});
-	if (res.status === "error") {
-		return;
-	}
-
-	const checkTimestamp = dayjs().add(10, "day").unix() * 1000;
-	// Refresh session cookie expiration
-	cookie.set("kn-sessionid", getSession(), { expires: 29, sameSite: "lax", secure: true });
-	cookie.set("kn-session-check-date", checkTimestamp.toString(), { expires: 29, sameSite: "lax", secure: true });
-}
 
 export function setLanguage(lang: "en" | "ro") {
 	cookie.set("kn-lang", lang, { expires: 1000, sameSite: "lax", secure: true });
@@ -78,27 +55,6 @@ export function setTheme(theme: "light" | "dark") {
 	}
 	document.dispatchEvent(new CustomEvent("kn-theme-change", {detail: theme}))
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-	if (window.platform_info.user_id <= 0) {
-		// If the user is unauthenticated, it is of no use to try to extend the session
-		return;
-	}
-	const checkCookie = cookie.get("kn-session-check-date");
-	if (typeof checkCookie == "undefined" || checkCookie === "") {
-		if (getSession() != "guest") {
-			extendSession();
-		}
-		return;
-	}
-	const val = parseInt(checkCookie);
-	if (isNaN(val)) {
-		return;
-	}
-	if (dayjs(val).isBefore(dayjs())) {
-		extendSession();
-	}
-});
 
 // should be used by the navbar toggle
 export function toggleTheme(e?: Event) {

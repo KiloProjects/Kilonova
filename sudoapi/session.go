@@ -14,8 +14,10 @@ import (
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
 )
 
-func (s *BaseAPI) CreateSession(ctx context.Context, uid int) (string, error) {
-	sid, err := s.db.CreateSession(ctx, uid)
+// CreateSession logs the user in. Persistent sessions ("keep me signed in") last 30 days,
+// the others 24 hours; both are sliding, SessionUser extends them while they are in use.
+func (s *BaseAPI) CreateSession(ctx context.Context, uid int, persistent bool) (string, error) {
+	sid, err := s.db.CreateSession(ctx, uid, persistent)
 	if err != nil {
 		slog.WarnContext(ctx, "Failed to create session", slog.Any("err", err))
 		return "", fmt.Errorf("failed to create session: %w", err)
@@ -68,6 +70,10 @@ func (s *BaseAPI) SessionUser(ctx context.Context, sid string, r *http.Request) 
 			ip, ua := s.GetRequestInfo(r)
 			if err := s.db.UpdateSessionDevice(context.Background(), sid, uid, ip, &ua); err != nil {
 				slog.WarnContext(ctx, "Couldn't update session device", slog.Any("err", err))
+			}
+			// Sliding expiration: a session in use never runs out
+			if err := s.db.TouchSession(context.Background(), sid); err != nil {
+				slog.WarnContext(ctx, "Couldn't extend session", slog.Any("err", err))
 			}
 		}(user.ID, r)
 	}
@@ -170,15 +176,36 @@ func (s *BaseAPI) RemoveUserSessions(ctx context.Context, uid int) error {
 	return nil
 }
 
-func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
-	newExpiration, err := s.db.ExtendSession(ctx, sid)
+// ExtendSession returns the session with its new expiration.
+func (s *BaseAPI) ExtendSession(ctx context.Context, sid string) (*Session, error) {
+	sess, err := s.db.ExtendSession(ctx, sid)
 	if err != nil {
-		if err.Error() == "Unauthed" {
-			return time.Now(), Statusf(400, "Session already expired")
+		if err.Error() == "unauthed" {
+			return nil, Statusf(400, "Session already expired")
 		}
-		return time.Now(), fmt.Errorf("couldn't extend session: %w", err)
+		return nil, fmt.Errorf("couldn't extend session: %w", err)
 	}
-	return newExpiration, nil
+	return sess, nil
+}
+
+// SetSessCookie stores the session in the browser. Every response that creates a session must call it.
+// The cookie says nothing about when the session ends, the sessions table does:
+// a persistent session gets the longest cookie browsers accept (400 days), and a
+// non-persistent one gets a cookie with no expiry, so it is gone when the browser closes.
+func (s *BaseAPI) SetSessCookie(w http.ResponseWriter, sid string, persistent bool) {
+	var expires time.Time
+	if persistent {
+		expires = time.Now().Add(400 * 24 * time.Hour)
+	}
+	// Not HttpOnly: the frontend API client sends it as the Authorization header
+	http.SetCookie(w, &http.Cookie{
+		Name:     "kn-sessionid",
+		Value:    sid,
+		Path:     "/",
+		Expires:  expires,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 func (s *BaseAPI) GetSessCookie(r *http.Request) string {

@@ -14,7 +14,7 @@ import (
 )
 
 type SessionsParams struct {
-	// IsAdmin shows session IDs, owners and devices.
+	// IsAdmin shows session IDs, owners, devices and whether the session is persistent.
 	IsAdmin  bool
 	Sessions []*SessionEntry
 
@@ -52,6 +52,7 @@ func session(ctx context.Context, isAdmin bool, s *SessionEntry) Node {
 			item("created_at", ui.ServerTimestamp(s.CreatedAt)),
 			item("expires_at", ui.ServerTimestamp(s.ExpiresAt)),
 			item("expired", Text(strconv.FormatBool(s.Expired()))),
+			If(isAdmin, item("auth.keep_signed_in", Text(strconv.FormatBool(s.Persistent)))),
 			Iff(isAdmin && s.User != nil, func() Node {
 				return item("username", A(Href("/profile/"+s.User.Name), Text(s.User.Name+" (#"+strconv.Itoa(s.User.ID)+")")))
 			}),

@@ -96,6 +96,11 @@ var Migrations = postgres.MigrationConfig{
 			Name:    "More indexes",
 			Handler: runFile("016.submission_subtasks_indexes.sql"),
 		},
+		{
+			ID:      18,
+			Name:    "Non-persistent sessions",
+			Handler: runFile("017.session_persistent.sql"),
+		},
 	},
 	// Run every time a migrate up happens
 	SpecialMigrations: []postgres.Migration{

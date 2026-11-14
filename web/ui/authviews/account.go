@@ -205,7 +205,6 @@ async function signup(e) {
 	let res = await bundled.postCall("/auth/signup", data)
 ` + handleCaptchaErrorJS + `
 	bundled.clearLanguageCookie()
-	bundled.setSession(res.data)
 	bundled.navigateBack()
 }
 document.getElementById("signup_form").addEventListener("submit", signup)

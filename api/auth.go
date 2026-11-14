@@ -7,18 +7,6 @@ import (
 	"github.com/KiloProjects/kilonova"
 )
 
-/*
-	NOTE: Session expires after 30 days
-	Cookie should look like this:
-	cookie := &http.Cookie{
-		Name:     "kn-sessionid",
-		Value:    sid,
-		Path:     "/",
-		HttpOnly: false,
-		Expires:  time.Now().Add(time.Hour * 24 * 30),
-	}
-*/
-
 func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 	s.signupLock.Lock()
 	defer s.signupLock.Unlock()
@@ -78,11 +66,13 @@ func (s *API) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := s.base.CreateSession(r.Context(), uid)
+	// Signup has no "keep me signed in" choice, so the first session is always a short one
+	sid, err := s.base.CreateSession(r.Context(), uid, false)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
+	s.base.SetSessCookie(w, sid, false)
 	returnData(w, sid)
 }
 
@@ -90,6 +80,9 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 	var auth struct {
 		Username string
 		Password string
+		// Persistent chooses a 30 day session over a 24 hour one.
+		// Left out, it is true, which is what this endpoint always did.
+		Persistent *bool `json:"persistent"`
 	}
 
 	if err := parseRequest(r, &auth); err != nil {
@@ -109,7 +102,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid, err := s.base.CreateSession(r.Context(), user.ID)
+	sid, err := s.base.CreateSession(r.Context(), user.ID, auth.Persistent == nil || *auth.Persistent)
 	if err != nil {
 		statusError(w, err)
 		return
@@ -129,10 +122,10 @@ func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
 		returnData(w, nil)
 		return
 	}
-	exp, err := s.base.ExtendSession(r.Context(), h)
+	sess, err := s.base.ExtendSession(r.Context(), h)
 	if err != nil {
 		statusError(w, err)
 		return
 	}
-	returnData(w, exp)
+	returnData(w, sess.ExpiresAt)
 }

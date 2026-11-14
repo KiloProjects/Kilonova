@@ -687,6 +687,10 @@ ro = "Înregistrare"
 en = "Log In"
 ro = "Logare"
 
+[auth.keep_signed_in]
+en = "Keep me signed in"
+ro = "Păstrează-mă autentificat"
+
 [auth.logout]
 en = "Log Out"
 ro = "Log Out"

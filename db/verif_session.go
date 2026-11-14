@@ -13,7 +13,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const sessionDuration = time.Hour * 24 * 30
+// sessionDuration is how far in the future a session expires when it is created or extended.
+func sessionDuration(persistent bool) time.Duration {
+	if persistent {
+		return 30 * 24 * time.Hour
+	}
+	return 24 * time.Hour
+}
 
 type dbVerification struct {
 	ID        string    `db:"id"`
@@ -50,6 +56,8 @@ type Session struct {
 	CreatedAt time.Time `db:"created_at"`
 	UserID    int       `db:"user_id"`
 	ExpiresAt time.Time `db:"expires_at"`
+	// Persistent is true for "keep me signed in" sessions
+	Persistent bool `db:"persistent"`
 }
 
 func (sess *Session) Expired() bool {
@@ -135,10 +143,10 @@ func (s *DB) CountSessions(ctx context.Context, filter *SessionFilter) (int, err
 	return val, err
 }
 
-func (s *DB) CreateSession(ctx context.Context, uid int) (string, error) {
+func (s *DB) CreateSession(ctx context.Context, uid int, persistent bool) (string, error) {
 	// If there is a collision, at least it will be from that user already
 	vid := kilonova.RandomSaltedString(strconv.Itoa(uid))
-	_, err := s.conn.Exec(ctx, `INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)`, vid, uid, time.Now().Add(sessionDuration))
+	_, err := s.conn.Exec(ctx, `INSERT INTO sessions (id, user_id, expires_at, persistent) VALUES ($1, $2, $3, $4)`, vid, uid, time.Now().Add(sessionDuration(persistent)), persistent)
 	if err != nil {
 		return "", err
 	}
@@ -167,20 +175,34 @@ func (s *DB) RemoveSession(ctx context.Context, sess string) error {
 	return err
 }
 
-// RemoveOldSessions deletes all but the [keep] most recent sessions of the user.
+// RemoveOldSessions deletes all but the [keep] most recently created sessions of the user.
 func (s *DB) RemoveOldSessions(ctx context.Context, userID int, keep int) ([]string, error) {
-	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY expires_at DESC LIMIT $2))`, userID, keep)
+	q, _ := s.conn.Query(ctx, `DELETE FROM sessions WHERE user_id = $1 AND NOT (id = ANY(SELECT id FROM sessions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2)) RETURNING id`, userID, keep)
 	return pgx.CollectRows(q, pgx.RowTo[string])
 }
 
-func (s *DB) ExtendSession(ctx context.Context, sid string) (time.Time, error) {
+func (s *DB) ExtendSession(ctx context.Context, sid string) (*Session, error) {
 	sess, err := s.getSession(ctx, sid)
-	if err != nil || sess == nil {
-		return time.Time{}, err
+	if err != nil {
+		return nil, err
 	}
-	var newExpiration time.Time
-	err = s.conn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration)).Scan(&newExpiration)
-	return newExpiration, err
+	err = s.conn.QueryRow(ctx, `UPDATE sessions SET expires_at = $2 WHERE id = $1 RETURNING expires_at`, sess.ID, time.Now().Add(sessionDuration(sess.Persistent))).Scan(&sess.ExpiresAt)
+	return sess, err
+}
+
+// sessionTouchInterval bounds how often TouchSession writes: an active session's expiration
+// is at most this stale, so the idle timeout is sessionDuration minus up to this much.
+const sessionTouchInterval = time.Hour
+
+// TouchSession is ExtendSession for the request path: it slides the expiration of an active
+// session forward by its own duration, but only writes once per sessionTouchInterval.
+func (s *DB) TouchSession(ctx context.Context, sid string) error {
+	_, err := s.conn.Exec(ctx, `
+		UPDATE sessions SET expires_at = NOW() + CASE WHEN persistent THEN $2::interval ELSE $3::interval END
+		WHERE id = $1 AND NOW() < expires_at
+			AND expires_at < NOW() + CASE WHEN persistent THEN $2::interval ELSE $3::interval END - $4::interval
+	`, sid, sessionDuration(true), sessionDuration(false), sessionTouchInterval)
+	return err
 }
 
 func (s *DB) RemoveSessions(ctx context.Context, userID int) ([]string, error) {
