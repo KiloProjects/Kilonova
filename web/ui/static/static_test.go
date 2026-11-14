@@ -51,6 +51,6 @@ func TestDonationSum(t *testing.T) {
 }
 
 func TestLegal(t *testing.T) {
-	uitest.Contains(t, uitest.Render(t, PrivacyPolicy(base, "https://kn.test/")), `<a href="https://kn.test/">https://kn.test/</a>`, "Kilonova Privacy Policy")
+	uitest.Contains(t, uitest.Render(t, PrivacyPolicy(base, "https://kn.test/")), `<a href="https://kn.test/">https://kn.test/</a>`, "Kilonova Privacy Policy", "Problem Activity Data")
 	uitest.Contains(t, uitest.Render(t, TermsOfService(base)), "Kilonova Terms of Service", `href="/privacyPolicy"`)
 }

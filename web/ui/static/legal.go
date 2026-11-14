@@ -19,7 +19,7 @@ func TermsOfService(_ context.Context) Node {
 
 const privacyHead = `<div class="segment-panel reset-list">
     <h1>Privacy Policy</h1>
-    <p><i>Last updated: 22 October 2024</i></p>
+    <p><i>Last updated: 14 November 2026</i></p>
 
     <p>We're not the biggest fans of long legal documents, but we need this page.</p>
 
@@ -29,6 +29,7 @@ const privacyHead = `<div class="segment-panel reset-list">
         <li>We store what you submit on the website (submissions, biography, etc).</li>
         <li>We will protect personal information by reasonable security safeguards against loss or theft, as well as unauthorized access, disclosure, copying, use or modification.</li>
         <li>You can request to have your personal information deleted from the website.</li>
+        <li>We record a small amount of activity on problems (such as when you first open one or reveal a hint) and use it only to estimate problem difficulty and ratings.</li>
         <li>We will collect personal information by lawful and fair means and, where appropriate, with the knowledge or consent of the individual concerned.</li>
         <li>Personal data should be relevant to the purposes for which it is to be used, and, to the extent necessary for those purposes, should be accurate, complete, and up-to-date.</li>
         <li>We will make readily available to customers information about our policies and practices relating to the management of personal information.</li>
@@ -76,6 +77,20 @@ const privacyTail = ` (the "Site") or otherwise communicate with us (collectivel
 
 <p>We also automatically collect certain information about your interaction with the Services ("Usage Data"). To do this, we may use cookies, pixels and similar technologies ("Cookies"). Usage Data may include information about how you access and use our Site and your account, including device information, browser information, information about your network connection, your IP address and other information regarding your interaction with the Services.</p>
 
+<h2>Problem Activity Data</h2>
+
+<p>When you are logged in, we collect a limited set of data about how you work on problems ("Activity Data"), solely to estimate problem difficulty and user ratings (see "Ratings and Difficulty Estimation" below). Activity Data consists of:</p>
+
+<ul>
+    <li>The time you first opened a problem.</li>
+    <li>The total time a problem page was open and focused in your browser, kept as a single running total per problem, not as a log of individual events.</li>
+    <li>When you revealed a hint, the problem tags, an editorial or a solution on the Site, and when you followed a link to an external resource listed for a problem.</li>
+    <li>Whether a large amount of text was pasted into the code editor before a submission. We record only that this happened, never what was pasted.</li>
+    <li>Your answers to optional questions about a problem, such as how difficult you found it or whether you used outside help.</li>
+</ul>
+
+<p>We do not record keystrokes, mouse movements or the content of anything you paste, and we do not use third-party analytics for Activity Data. Activity Data is not collected while you are logged out.</p>
+
 <h2>Information We Obtain from Third Parties</h2>
 
 <p>Finally, we may obtain information about you from third parties, including from vendors and service providers who may collect information on our behalf, such as:</p>
@@ -90,8 +105,9 @@ const privacyTail = ` (the "Site") or otherwise communicate with us (collectivel
 
 <ul>
     <li>Providing Products and Services. We use your personal information to provide you with the Services in order to perform our contract with you, including to process your payments, fulfill your orders, to send notifications to you related to you account, purchases, returns, exchanges or other transactions, to create, maintain and otherwise manage your account, to arrange for shipping, facilitate any returns and exchanges and to enable you to post reviews.</li>
-    <li>Marketing and Advertising. We use your personal information for marketing and promotional purposes, such as to send marketing, advertising and promotional communications by email, text message or postal mail, and to show you advertisements for products or services. This may include using your personal information to better tailor the Services and advertising on our Site and other websites.</li>
+    <li>No Advertising. We do not show advertisements, we do not sell your personal information, and we do not use it to build profiles for marketing or advertising.</li>
     <li>Security and Fraud Prevention. We use your personal information to detect, investigate or take action regarding possible fraudulent, illegal or malicious activity. If you choose to use the Services and register an account, you are responsible for keeping your account credentials safe. We highly recommend that you do not share your username, password, or other access details with anyone else. If you believe your account has been compromised, please contact us immediately.</li>
+    <li>Ratings and Difficulty Estimation. We use your submissions, contest results, Activity Data and optional feedback to estimate problem difficulty and to compute your rating. This is in our legitimate interest in recommending suitable problems and helping users track their progress. Ratings are informational only and are not used to make decisions that have legal or similarly significant effects on you. Activity Data is not used for marketing or advertising.</li>
     <li>Communicating with you. We use your personal information to provide you with customer support and improve our Services. This is in our legitimate interests in order to be responsive to you, to provide effective services to you, and to maintain our business relationship with you.</li>
 </ul>
 
@@ -123,13 +139,23 @@ const privacyTail = ` (the "Site") or otherwise communicate with us (collectivel
 
 <h2>Children's Data</h2>
 
-<p>The Services are not intended to be used by children, and we do not knowingly collect any personal information about children. If you are the parent or guardian of a child who has provided us with their personal information, you may contact us using the contact details set out below to request that it be deleted.</p>
+<p>Kilonova is used by students, many of whom are minors. Instead of treating some users differently based on age, we apply the same protections to all users:</p>
+
+<ul>
+    <li>We do not show advertisements, sell personal information, or profile users for marketing or advertising.</li>
+    <li>We do not use third-party analytics, and we keep Activity Data to the minimum described in this Privacy Policy.</li>
+    <li>You can object to the use of your Activity Data for ratings at any time, as described in "Your Rights and Choices".</li>
+</ul>
+
+<p>If you are under 16, you may use the Services only with the permission of your parent or legal guardian. If you are the parent or guardian of a minor who uses the Services, you may contact us using the contact details set out below to access, correct or delete their personal information.</p>
 
 <h2>Security and Retention of Your Information</h2>
 
 <p>Please be aware that no security measures are perfect or impenetrable, and we cannot guarantee "perfect security." In addition, any information you send to us may not be secure while in transit. We recommend that you do not use unsecure channels to communicate sensitive or confidential information to us.</p>
 
 <p>How long we retain your personal information depends on different factors, such as whether we need the information to maintain your account, to provide the Services, comply with legal obligations, resolve disputes or enforce other applicable contracts and policies.</p>
+
+<p>Raw Activity Data is kept for at most 12 months. After that, it is deleted or kept only in aggregated form that is no longer linked to your account. Activity Data is included when you request a copy of your data, and it is deleted when your account is deleted.</p>
 
 <h2>Your Rights and Choices</h2>
 
@@ -140,6 +166,7 @@ const privacyTail = ` (the "Site") or otherwise communicate with us (collectivel
     <li>Right to Delete. You may have a right to request that we delete personal information we maintain about you.</li>
     <li>Right to Correct. You may have a right to request that we correct inaccurate personal information we maintain about you.</li>
     <li>Right of Portability. You may have a right to receive a copy of the personal information we hold about you and to request that we transfer it to a third party, in certain circumstances and with certain exceptions.</li>
+    <li>Right to Object. You may object to the use of your Activity Data for ratings and difficulty estimation. If you do, we will stop using them in future computations.</li>
     <li>Withdrawal of Consent: Where we rely on consent to process your personal information, you may have the right to withdraw this consent.</li>
     <li>Appeal: You may have a right to appeal our decision if we decline to process your request. You can do so by replying directly to our denial.</li>
 </ul>
@@ -152,7 +179,7 @@ const privacyTail = ` (the "Site") or otherwise communicate with us (collectivel
 
 <p>If you have complaints about how we process your personal information, please contact us using the contact details provided below. If you are not satisfied with our response to your complaint, depending on where you live you may have the right to appeal our decision by contacting us using the contact details set out below, or lodge your complaint with your local data protection authority.</p>
 
-International Users
+<h2>International Users</h2>
 
 <p>Please note that we may transfer, store and process your personal information outside the country you live in. If we transfer your personal information out of Europe, we will rely on recognized transfer mechanisms like the European Commission's Standard Contractual Clauses, or any equivalent contracts issued by the relevant competent authority of the UK, as relevant, unless the data transfer is to a country that has been determined to provide an adequate level of protection.</p>
 
@@ -166,7 +193,7 @@ International Users
 
 const termsOfService = `<div class="segment-panel reset-list">
     <h1>Terms of Service</h1>
-    <p><i>Last updated: 22 October 2024</i></p>
+    <p><i>Last updated: 14 November 2026</i></p>
 
     <p>We're not the biggest fans of long legal documents, but we need this page.</p>
 
@@ -195,7 +222,7 @@ const termsOfService = `<div class="segment-panel reset-list">
 
 <h2>Usage terms</h2>
 
-<p>By agreeing to these Terms of Service, you represent that you are at least the minimum legal age of your region to create an account (which is usually 16). Children may use an account established by their parent or legal guardian with the approval of such a person.</p>
+<p>By agreeing to these Terms of Service, you represent that you are at least the minimum legal age of your region to create an account (which is usually 16). If you are under that age, you may use the Services only with the permission of your parent or legal guardian.</p>
 
 <p>You may not use our products for any illegal or unauthorized purpose nor may you, in the use of the Service, violate any laws in your jurisdiction (including but not limited to copyright laws).</p>
 
