@@ -215,9 +215,6 @@ func (s *API) HandlerV1() http.Handler {
 		r.With(s.MustBeVisitor).Post("/login", s.login)
 
 		r.With(s.MustBeAuthed).Post("/extendSession", s.extendSession)
-
-		r.With(s.MustBeVisitor).Post("/forgotPassword", s.sendForgotPwdMail())
-		r.Post("/resetPassword", s.resetPassword)
 	})
 	r.Route("/problem", func(r chi.Router) {
 		r.Post("/get", webWrapper(s.getProblems))

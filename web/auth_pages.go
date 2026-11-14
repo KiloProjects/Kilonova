@@ -2,10 +2,14 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
+
+	"github.com/Yiling-J/theine-go"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
@@ -38,11 +42,70 @@ func (rt *Web) signup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (rt *Web) forgotPassword(w http.ResponseWriter, r *http.Request) {
+func (rt *Web) forgotPasswordPage(w http.ResponseWriter, r *http.Request, status int, errorMessage string, sent bool) {
+	captchaID := ""
+	if !sent {
+		captchaID = rt.captchaID(r.Context())
+	}
+	w.WriteHeader(status)
 	rt.runLayout(w, r, &LayoutParams{
 		Title:   kilonova.GetText(util.Language(r), "auth.forgot_pwd"),
-		Content: authviews.ForgotPasswordPage(r.Context(), rt.captchaID(r.Context())),
+		Content: authviews.ForgotPasswordPage(r.Context(), captchaID, r.FormValue("email"), errorMessage, sent),
 	})
+}
+
+func (rt *Web) forgotPassword(w http.ResponseWriter, r *http.Request) {
+	rt.forgotPasswordPage(w, r, http.StatusOK, "", false)
+}
+
+func (rt *Web) postForgotPassword() http.HandlerFunc {
+	// Limits reset emails to one per address every 2 minutes
+	throttler, err := theine.NewBuilder[string, time.Time](5000).Build()
+	if err != nil {
+		panic(err)
+	}
+	var mu sync.Mutex
+	return func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		lang := util.Language(r)
+		email := r.FormValue("email")
+		if email == "" {
+			rt.forgotPasswordPage(w, r, http.StatusBadRequest, "No email address specified", false)
+			return
+		}
+		if !rt.base.MailerEnabled() {
+			rt.forgotPasswordPage(w, r, http.StatusBadRequest, "Mailing subsystem was disabled by administrator", false)
+			return
+		}
+		if flags.CaptchaEnabled.Get(r.Context()) && !rt.base.CheckCaptcha(r.FormValue("captcha_id"), r.FormValue("captcha_response")) {
+			rt.forgotPasswordPage(w, r, http.StatusBadRequest, kilonova.GetText(lang, "auth.captcha.invalid"), false)
+			return
+		}
+
+		if lastSent, ok := throttler.Get(email); ok && time.Since(lastSent) <= 2*time.Minute {
+			rt.forgotPasswordPage(w, r, http.StatusTooManyRequests, kilonova.GetText(lang, "auth.forgot_pwd.throttled"), false)
+			return
+		}
+		throttler.SetWithTTL(email, time.Now(), 1, 10*time.Minute)
+
+		userFull, err := rt.base.UserFullByEmail(r.Context(), email)
+		if err != nil && !errors.Is(err, kilonova.ErrNotFound) {
+			rt.forgotPasswordPage(w, r, kilonova.ErrorCode(err), err.Error(), false)
+			return
+		}
+		if err == nil {
+			ctx := context.WithoutCancel(r.Context())
+			go func() {
+				if err := rt.base.SendPasswordResetEmail(ctx, userFull.ID, userFull.Name, userFull.Email, userFull.PreferredLanguage); err != nil {
+					slog.InfoContext(ctx, "Could not send password reset email", slog.Any("err", err), slog.String("email", email))
+				}
+			}()
+		}
+
+		// Same answer whether or not the address has an account
+		rt.forgotPasswordPage(w, r, http.StatusOK, "", true)
+	}
 }
 
 func (rt *Web) resendEmail() http.HandlerFunc {
@@ -109,31 +172,43 @@ func (rt *Web) verifyEmail() http.HandlerFunc {
 	}
 }
 
-func (rt *Web) resetPassword() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		reqid := r.PathValue("reqid")
-		if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
-			rt.statusPage(w, r, 404, "")
-			return
-		}
-
-		uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
-		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't get user from password reset request", slog.Any("err", err))
-			rt.statusPage(w, r, 404, "")
-			return
-		}
-
-		userFull, err := rt.base.UserFull(r.Context(), uid)
-		if err != nil {
-			slog.WarnContext(r.Context(), "Couldn't get full user", slog.Any("err", err))
-			rt.statusPage(w, r, 404, "")
-			return
-		}
-
-		rt.runLayout(w, r, &LayoutParams{
-			Title:   kilonova.GetText(util.Language(r), "reset_pwd"),
-			Content: authviews.ResetPasswordPage(r.Context(), userFull, reqid),
-		})
+// resetPassword shows the new password form on GET and applies it on POST.
+func (rt *Web) resetPassword(w http.ResponseWriter, r *http.Request) {
+	reqid := r.PathValue("reqid")
+	if !rt.base.CheckPasswordResetRequest(r.Context(), reqid) {
+		rt.statusPage(w, r, 404, "")
+		return
 	}
+
+	uid, err := rt.base.GetPwdResetRequestUser(r.Context(), reqid)
+	if err != nil {
+		slog.WarnContext(r.Context(), "Couldn't get user from password reset request", slog.Any("err", err))
+		rt.statusPage(w, r, 404, "")
+		return
+	}
+
+	userFull, err := rt.base.UserFull(r.Context(), uid)
+	if err != nil {
+		slog.WarnContext(r.Context(), "Couldn't get full user", slog.Any("err", err))
+		rt.statusPage(w, r, 404, "")
+		return
+	}
+
+	params := &LayoutParams{Title: kilonova.GetText(util.Language(r), "reset_pwd")}
+	errorMessage := ""
+	if r.Method == http.MethodPost {
+		if r.FormValue("password") != r.FormValue("password_confirm") {
+			errorMessage = kilonova.GetText(util.Language(r), "differentPwds")
+			w.WriteHeader(http.StatusBadRequest)
+		} else if err := rt.base.FinalizePasswordReset(r.Context(), reqid, r.FormValue("password")); err != nil {
+			errorMessage = err.Error()
+			w.WriteHeader(kilonova.ErrorCode(err))
+		} else {
+			params.Content = authviews.PasswordResetDone(r.Context())
+			rt.runLayout(w, r, params)
+			return
+		}
+	}
+	params.Content = authviews.ResetPasswordPage(r.Context(), userFull, reqid, errorMessage)
+	rt.runLayout(w, r, params)
 }

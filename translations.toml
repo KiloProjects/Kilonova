@@ -1779,6 +1779,18 @@ ro = "Creat pe"
 en = "Forgot password"
 ro = "Parolă uitată"
 
+[auth.forgot_pwd.sent]
+en = "If the provided email address is correct, an email should arrive shortly."
+ro = "Dacă adresa de email este corectă, vei primi un email în scurt timp."
+
+[auth.forgot_pwd.throttled]
+en = "Please wait a little longer until requesting another password reset email."
+ro = "Te rugăm să mai aștepți puțin înainte de a cere un alt email de resetare a parolei."
+
+[auth.reset_pwd.done]
+en = "Password reset. You may now log in with the new password."
+ro = "Parola a fost resetată. Te poți autentifica acum cu noua parolă."
+
 [recover]
 en = "Recover"
 ro = "Recuperare"

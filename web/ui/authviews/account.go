@@ -2,6 +2,7 @@ package authviews
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/internal/util"
@@ -48,43 +49,54 @@ func SignupPage(ctx context.Context, params SignupParams) Node {
 	}
 }
 
-func ForgotPasswordPage(ctx context.Context, captchaID string) Node {
-	return Group{
-		ui.CenteredLayout(
-			Form(Class("segment-panel"), ID("pwd_forgot_form"),
-				H1(Class("mb-4 text-center"), ui.T(ctx, "auth.forgot_pwd")),
-				Label(Class("block mb-2"),
-					Span(Class("form-label"), ui.T(ctx, "email")), Text(" "),
-					Input(Class("form-input w-full"), Type("email"), ID("pwd_email"), Name("email"), Required()),
-				),
-				captcha(ctx, captchaID, false),
-				ui.SubmitButton(Class("block"), ui.T(ctx, "recover")),
-			),
-		),
-		Script(Raw(forgotPwdJS)),
+// ForgotPasswordPage is the form asking for a password reset email. sent replaces the form with the confirmation.
+func ForgotPasswordPage(ctx context.Context, captchaID, email, errorMessage string, sent bool) Node {
+	if sent {
+		return ui.CenteredLayout(Div(Class("segment-panel"),
+			H1(Class("mb-4 text-center"), ui.T(ctx, "auth.forgot_pwd")),
+			P(ui.T(ctx, "auth.forgot_pwd.sent")),
+		))
 	}
+	return ui.CenteredLayout(
+		Form(Class("segment-panel"), ID("pwd_forgot_form"), Method("POST"), Action("/forgot_pwd"),
+			H1(Class("mb-4 text-center"), ui.T(ctx, "auth.forgot_pwd")),
+			If(errorMessage != "", P(Class("text-red-500"), Text(errorMessage))),
+			Label(Class("block mb-2"),
+				Span(Class("form-label"), ui.T(ctx, "email")), Text(" "),
+				Input(Class("form-input w-full"), Type("email"), ID("pwd_email"), Name("email"), Value(email), Required()),
+			),
+			Iff(captchaID != "", func() Node { return captcha(ctx, captchaID, false) }),
+			ui.SubmitButton(Class("block"), ui.T(ctx, "recover")),
+		),
+	)
 }
 
-func ResetPasswordPage(ctx context.Context, u *kilonova.UserFull, requestID string) Node {
-	pwd := func(key, id string) Node {
+func ResetPasswordPage(ctx context.Context, u *kilonova.UserFull, requestID, errorMessage string) Node {
+	pwd := func(key, name string) Node {
 		return Label(Class("block mb-2"),
 			Span(Class("form-label"), ui.T(ctx, key)), Text(" "),
-			Input(Class("form-input w-full"), Type("password"), ID(id), AutoComplete("off"), Name("password"), Required()),
+			Input(Class("form-input w-full"), Type("password"), AutoComplete("new-password"), Name(name), MinLength("6"), MaxLength("72"), Required()),
 		)
 	}
-	return Group{
-		ui.CenteredLayout(
-			Form(Class("segment-panel"), ID("pwd_reset_form"), AutoComplete("off"),
-				H1(Class("mb-4 text-center"), ui.T(ctx, "resetTitle", u.Name)),
-				Input(Type("hidden"), ID("pwd_reset_reqid"), Name("req_id"), Value(requestID)),
-				Input(Type("email"), Class("hidden"), Value(u.Email)),
-				pwd("newPwd", "pwd_reset_pwd"),
-				pwd("newPwdConfirm", "pwd_reset_pwd1"),
-				ui.SubmitButton(Class("block"), ui.T(ctx, "reset")),
-			),
+	return ui.CenteredLayout(
+		Form(Class("segment-panel"), ID("pwd_reset_form"), Method("POST"), Action("/resetPassword/"+url.PathEscape(requestID)),
+			H1(Class("mb-4 text-center"), ui.T(ctx, "resetTitle", u.Name)),
+			If(errorMessage != "", P(Class("text-red-500"), Text(errorMessage))),
+			// Lets password managers match the new password to the account
+			Input(Type("email"), Class("hidden"), AutoComplete("username"), Value(u.Email)),
+			pwd("newPwd", "password"),
+			pwd("newPwdConfirm", "password_confirm"),
+			ui.SubmitButton(Class("block"), ui.T(ctx, "reset")),
 		),
-		Script(Raw(resetPwdJS)),
-	}
+	)
+}
+
+func PasswordResetDone(ctx context.Context) Node {
+	return ui.CenteredLayout(Div(Class("segment-panel"),
+		H1(Class("mb-4 text-center"), ui.T(ctx, "reset_pwd")),
+		P(Class("mb-2"), ui.T(ctx, "auth.reset_pwd.done")),
+		A(Href("/login"), Class("btn btn-blue"), ui.T(ctx, "auth.login")),
+	))
 }
 
 func EmailResent(ctx context.Context) Node {
@@ -112,10 +124,10 @@ func captcha(ctx context.Context, id string, hidden bool) Node {
 				ui.T(ctx, "auth.captcha.title"), Text(":"), Br(),
 				Img(ID("captcha_img"), Class("rounded-sm"), Src("/api/auth/captcha/"+id+".png"), Alt("Captcha image"), Width("240"), Height("80"), Style("background-color: white;")),
 			),
-			Input(Type("hidden"), ID("captcha_id"), Value(id)),
+			Input(Type("hidden"), ID("captcha_id"), Name("captcha_id"), Value(id)),
 			Label(Class("block my-2"),
 				Span(ui.T(ctx, "response")), Text(" "),
-				Input(Type("text"), ID("captcha_response"), Class("form-input w-full"), Pattern("[0-9]*"), Value(""), AutoComplete("off")),
+				Input(Type("text"), ID("captcha_response"), Name("captcha_response"), Class("form-input w-full"), Pattern("[0-9]*"), Value(""), AutoComplete("off")),
 			),
 			ui.Button(ID("captcha_reload_btn"), I(Class("fas fa-fw fa-rotate")), Text(" "), ui.T(ctx, "reload")),
 		),
@@ -208,36 +220,4 @@ async function signup(e) {
 	bundled.navigateBack()
 }
 document.getElementById("signup_form").addEventListener("submit", signup)
-`
-
-const forgotPwdJS = `
-document.getElementById("pwd_forgot_form").addEventListener("submit", sendRequest)
-
-async function sendRequest(e) {
-	e.preventDefault();
-	let email = document.getElementById("pwd_email").value;
-	let res = await bundled.postCall("/auth/forgotPassword", {
-		email,
-		...getCaptchaData(),
-	})
-` + handleCaptchaErrorJS + `
-	bundled.apiToast(res)
-}
-`
-
-const resetPwdJS = `
-async function resetPassword(e) {
-	e.preventDefault()
-	let request_id = document.getElementById("pwd_reset_reqid").value;
-	let pwd = document.getElementById("pwd_reset_pwd").value,
-		pwd1= document.getElementById("pwd_reset_pwd1").value;
-	if(pwd != pwd1) {
-		bundled.createToast({title: bundled.getText("differentPwds"), status: 'error'});
-		return
-	}
-	let res = await bundled.postCall("/auth/resetPassword", {req_id: request_id, password: pwd})
-	bundled.apiToast(res)
-}
-
-document.getElementById("pwd_reset_form").addEventListener("submit", resetPassword)
 `

@@ -3,15 +3,12 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/KiloProjects/kilonova/domain/user"
-	"github.com/Yiling-J/theine-go"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/sudoapi"
@@ -272,104 +269,6 @@ func (s *API) changePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnData(w, "Successfully changed password")
-}
-
-func (s *API) sendForgotPwdMail() http.HandlerFunc {
-	throttler, err := theine.NewBuilder[string, time.Time](5000).Build()
-	if err != nil {
-		panic(err)
-	}
-	var mu sync.Mutex
-	return func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		defer mu.Unlock()
-		var args struct {
-			Email string `json:"email"`
-
-			CaptchaID       string `json:"captcha_id"`
-			CaptchaResponse string `json:"captcha_response"`
-		}
-		if err := parseRequest(r, &args); err != nil {
-			errorData(w, err, 500)
-			return
-		}
-		if args.Email == "" {
-			errorData(w, "No email address specified", 400)
-			return
-		}
-		if !s.base.MailerEnabled() {
-			errorData(w, "Mailing subsystem was disabled by administrator", 400)
-			return
-		}
-
-		// CAPTCHA check
-		if s.base.CaptchaEnabled() {
-			if args.CaptchaID == "" || args.CaptchaResponse == "" {
-				errorData(w, struct {
-					ID  string `json:"captcha_id"`
-					Key string `json:"translation_key"`
-				}{
-					ID:  s.base.NewCaptchaID(),
-					Key: "auth.captcha.must_solve",
-				}, http.StatusPreconditionRequired)
-				return
-			}
-			if !s.base.CheckCaptcha(args.CaptchaID, args.CaptchaResponse) {
-				errorData(w, struct {
-					ID  string `json:"captcha_id"`
-					Key string `json:"translation_key"`
-				}{
-					ID:  s.base.NewCaptchaID(),
-					Key: "auth.captcha.invalid",
-				}, http.StatusBadRequest)
-				return
-			}
-		}
-
-		if lastUpdated, ok := throttler.Get(args.Email); ok && time.Since(lastUpdated) <= 2*time.Minute {
-			errorData(w, "Please wait a little longer until requesting another password reset email!", 401)
-			return
-		}
-		if !throttler.SetWithTTL(args.Email, time.Now(), 1, 10*time.Minute) {
-			fmt.Println("bruh")
-		}
-
-		userFull, err := s.base.UserFullByEmail(r.Context(), args.Email)
-		if err != nil {
-			if errors.Is(err, kilonova.ErrNotFound) {
-				returnData(w, "If the provided email address is correct, an email should arrive shortly.")
-				return
-			}
-			statusError(w, err)
-			return
-		}
-
-		go func(user *kilonova.UserFull) {
-			if err := s.base.SendPasswordResetEmail(context.WithoutCancel(r.Context()), user.ID, user.Name, user.Email, user.PreferredLanguage); err != nil {
-				slog.InfoContext(r.Context(), "Could not send password reset email", slog.Any("err", err), slog.String("email", args.Email))
-			}
-		}(userFull)
-
-		returnData(w, "If the provided email address is correct, an email should arrive shortly.")
-	}
-}
-
-func (s *API) resetPassword(w http.ResponseWriter, r *http.Request) {
-	var args struct {
-		RequestID   string `json:"req_id"`
-		NewPassword string `json:"password"`
-	}
-	if err := parseRequest(r, &args); err != nil {
-		errorData(w, err, 500)
-		return
-	}
-
-	if err := s.base.FinalizePasswordReset(r.Context(), args.RequestID, args.NewPassword); err != nil {
-		statusError(w, err)
-		return
-	}
-
-	returnData(w, "Password reset. You may now log in with the updated credentials")
 }
 
 func (s *API) refreshPassword(ctx context.Context, _ struct{}) (string, error) {

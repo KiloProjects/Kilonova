@@ -120,7 +120,8 @@ func (rt *Web) Handler() http.Handler {
 		})
 
 		// Password reset
-		r.With(rt.mustBeVisitor, csrf.Handler).Get("/resetPassword/{reqid}", rt.resetPassword())
+		r.With(rt.mustBeVisitor, csrf.Handler).Get("/resetPassword/{reqid}", rt.resetPassword)
+		r.With(rt.mustBeVisitor, csrf.Handler).Post("/resetPassword/{reqid}", rt.resetPassword)
 
 		r.Get("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFileFS(w, r, embedded, "static/robots.txt")
@@ -140,6 +141,7 @@ func (rt *Web) Handler() http.Handler {
 		r.With(csrf.Handler).Post("/login", rt.handleLogin)
 		r.With(rt.mustBeVisitor, csrf.Handler).Get("/signup", rt.signup)
 		r.With(rt.mustBeVisitor, csrf.Handler).Get("/forgot_pwd", rt.forgotPassword)
+		r.With(rt.mustBeVisitor, csrf.Handler).Post("/forgot_pwd", rt.postForgotPassword())
 
 		r.With(rt.mustBeAuthed, csrf.Handler).Post("/logout", rt.logout)
 		r.With(rt.mustBeAuthed, csrf.Handler).Get("/logout", rt.confirmLogout)
