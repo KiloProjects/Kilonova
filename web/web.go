@@ -139,6 +139,7 @@ func (rt *Web) Handler() http.Handler {
 
 		r.With(csrf.Handler).Get("/login", rt.getLogin)
 		r.With(csrf.Handler).Post("/login", rt.handleLogin)
+		r.Mount("/captcha", rt.base.CaptchaImageHandler())
 		r.With(rt.mustBeVisitor, csrf.Handler).Get("/signup", rt.signup)
 		r.With(rt.mustBeVisitor, csrf.Handler).Post("/signup", rt.postSignup())
 		r.With(rt.mustBeVisitor, csrf.Handler).Get("/forgot_pwd", rt.forgotPassword)

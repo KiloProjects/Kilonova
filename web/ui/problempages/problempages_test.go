@@ -155,12 +155,12 @@ func TestArchive(t *testing.T) {
 	tb := &problems.TopbarParams{Problem: problem(), CanViewTests: true}
 	p := ArchiveParams{Topbar: tb, Settings: &kilonova.ProblemEvalSettings{CheckerName: "checker.cpp"}, Tests: []*kilonova.Test{{ID: 11, VisibleID: 1}}}
 	got := uitest.Render(t, Archive(ctx, p))
-	uitest.Contains(t, got, `<input class="hidden" id="aAllSubs" type="checkbox">`, "text-sm text-muted", `href="/assets/problem/7/test/11/input" download`, "function getCaptchaData() { return {} }", "var problemID = 7")
-	uitest.NotContains(t, got, "captcha_img")
+	uitest.Contains(t, got, `method="GET" action="/assets/problem/7/problemArchive"`, `name="tests" value="true" type="checkbox" checked`, "text-sm text-muted", `href="/assets/problem/7/test/11/input" download`)
+	uitest.NotContains(t, got, "captcha_img", "<script", `name="all_submissions"`, `name="private_attachments"`)
 
 	tb.IsProblemEditor, tb.CanViewTests = true, false
 	p.CaptchaID = "abc"
 	got = uitest.Render(t, Archive(ctx, p))
-	uitest.Contains(t, got, `<input class="form-checkbox" id="aAllSubs" type="checkbox">`, `<input class="hidden" id="aTests" type="checkbox">`, `src="/api/auth/captcha/abc.png"`)
-	uitest.NotContains(t, got, "text-sm text-muted")
+	uitest.Contains(t, got, `<input class="form-checkbox" name="all_submissions" value="true" type="checkbox">`, `src="/captcha/abc.png"`, `name="captcha_id" value="abc"`)
+	uitest.NotContains(t, got, "text-sm text-muted", `name="tests"`)
 }

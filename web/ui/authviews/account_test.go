@@ -17,7 +17,7 @@ func TestSignupPage(t *testing.T) {
 		uitest.NotContains(t, got, "postCall", "captcha_container")
 	})
 	t.Run("captcha only when it must be solved", func(t *testing.T) {
-		uitest.Contains(t, uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, CaptchaID: "abc"})), `src="/api/auth/captcha/abc.png"`, `name="captcha_response"`)
+		uitest.Contains(t, uitest.Render(t, SignupPage(ctx, SignupParams{Enabled: true, CaptchaID: "abc"})), `src="/captcha/abc.png"`, `name="captcha_response"`)
 	})
 }
 

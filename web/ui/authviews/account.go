@@ -45,7 +45,7 @@ func SignupPage(ctx context.Context, params SignupParams) Node {
 				Option(Value("ro"), If(lang == "ro", Selected()), Text("🇷🇴 Română")),
 				Option(Value("en"), If(lang == "en", Selected()), Text("🇬🇧 English")),
 			)),
-			Iff(params.CaptchaID != "", func() Node { return captcha(ctx, params.CaptchaID) }),
+			Iff(params.CaptchaID != "", func() Node { return ui.Captcha(ctx, params.CaptchaID) }),
 			ui.SubmitButton(Class("block mb-3"), ui.T(ctx, "auth.signup")),
 			P(Class("text-gray-500 dark:text-gray-300"), Text(" "), ui.TRaw(ctx, "loginReminder")),
 		),
@@ -87,7 +87,7 @@ func ForgotPasswordPage(ctx context.Context, captchaID, email, errorMessage stri
 				Span(Class("form-label"), ui.T(ctx, "email")), Text(" "),
 				Input(Class("form-input w-full"), Type("email"), ID("pwd_email"), Name("email"), Value(email), Required()),
 			),
-			Iff(captchaID != "", func() Node { return captcha(ctx, captchaID) }),
+			Iff(captchaID != "", func() Node { return ui.Captcha(ctx, captchaID) }),
 			ui.SubmitButton(Class("block"), ui.T(ctx, "recover")),
 		),
 	)
@@ -134,28 +134,3 @@ func EmailVerified(ctx context.Context, name string) Node {
 		H3(ui.T(ctx, "closeTab")),
 	}
 }
-
-// captcha renders the CAPTCHA box; the script only reloads the image.
-func captcha(ctx context.Context, id string) Node {
-	return Group{
-		Div(ID("captcha_container"), Class("segment-panel"),
-			P(
-				ui.T(ctx, "auth.captcha.title"), Text(":"), Br(),
-				Img(ID("captcha_img"), Class("rounded-sm"), Src("/api/auth/captcha/"+id+".png"), Alt("Captcha image"), Width("240"), Height("80"), Style("background-color: white;")),
-			),
-			Input(Type("hidden"), ID("captcha_id"), Name("captcha_id"), Value(id)),
-			Label(Class("block my-2"),
-				Span(ui.T(ctx, "response")), Text(" "),
-				Input(Type("text"), ID("captcha_response"), Name("captcha_response"), Class("form-input w-full"), Pattern("[0-9]*"), Value(""), AutoComplete("off")),
-			),
-			ui.Button(ID("captcha_reload_btn"), I(Class("fas fa-fw fa-rotate")), Text(" "), ui.T(ctx, "reload")),
-		),
-		Script(Raw(captchaJS)),
-	}
-}
-
-const captchaJS = `
-document.getElementById("captcha_reload_btn").addEventListener("click", () => {
-	document.getElementById("captcha_img").src = "/api/auth/captcha/" + document.getElementById("captcha_id").value + ".png?reload=" + Date.now()
-})
-`
