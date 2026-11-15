@@ -97,15 +97,15 @@ CREATE OR REPLACE FUNCTION persistently_visible_pbs(user_id bigint) RETURNS TABL
     UNION ALL
     (SELECT pbs.problem_id as problem_id, 0 as user_id
         FROM contest_problems pbs, contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        WHERE pbs.contest_id = contests.id AND contests.visible = true AND contests.type = 'official'
         AND contests.end_time <= NOW()
-        AND 0 = $1) -- Visible contests after they ended for anons. TODO: Find alternative
+        AND 0 = $1) -- Visible OFFICIAL contests after they ended for anons. Must stay a subset of visible_pbs. TODO: Find alternative
     UNION ALL
     (SELECT pbs.problem_id as problem_id, users.id as user_id
         FROM contest_problems pbs, users, contests
-        WHERE pbs.contest_id = contests.id AND contests.visible = true
+        WHERE pbs.contest_id = contests.id AND contests.visible = true AND contests.type = 'official'
         AND contests.end_time <= NOW()
-        AND users.id = $1); -- Visible contests after they ended
+        AND users.id = $1); -- Visible OFFICIAL contests after they ended. Must stay a subset of visible_pbs
 $$ LANGUAGE SQL STABLE;
 
 DROP VIEW IF EXISTS problem_editors CASCADE;
@@ -219,14 +219,15 @@ $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions;
 CREATE OR REPLACE FUNCTION visible_submissions(user_id bigint) RETURNS TABLE (sub_id bigint) AS $$
-    WITH v_pbs AS (SELECT * FROM visible_pbs($1))
+    WITH v_pbs AS (SELECT * FROM visible_pbs($1)),
+        full_pbs AS (SELECT * FROM persistently_visible_pbs($1))
     (SELECT id as sub_id
         FROM submissions, v_pbs
         WHERE submissions.user_id = $1 AND submissions.problem_id = v_pbs.problem_id) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
     (SELECT subs.id as sub_id
-        FROM submissions subs, v_pbs pb_viewers
-        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is visible
+        FROM submissions subs, full_pbs pb_viewers
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL) -- contest is null, so judge if problem is fully visible (contestants must not see non-contest submissions)
     UNION ALL
     (SELECT subs.id as sub_id
         FROM submissions subs, contest_user_access users
@@ -241,14 +242,15 @@ $$ LANGUAGE SQL STABLE;
 
 DROP FUNCTION IF EXISTS visible_submissions_ex;
 CREATE OR REPLACE FUNCTION visible_submissions_ex(user_id bigint, problem_id bigint, author_id bigint) RETURNS TABLE (sub_id bigint) AS $$
-    WITH v_pbs AS (SELECT * FROM visible_pbs($1) WHERE $2 IS NULL OR problem_id = $2)
+    WITH v_pbs AS (SELECT * FROM visible_pbs($1) WHERE $2 IS NULL OR problem_id = $2),
+        full_pbs AS (SELECT * FROM persistently_visible_pbs($1) WHERE $2 IS NULL OR problem_id = $2)
     (SELECT subs.id as sub_id
         FROM submissions subs, v_pbs
         WHERE subs.user_id = $1 AND subs.problem_id = v_pbs.problem_id AND ($3 IS NULL OR subs.user_id = $3) ) -- base case, users should see their own submissions if problem is still visible (also, coincidentally, works for contest problems)
     UNION ALL
     (SELECT subs.id as sub_id
-        FROM submissions subs, v_pbs pb_viewers
-        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL AND ($3 IS NULL OR subs.user_id = $3)) -- contest is null, so judge if problem is visible
+        FROM submissions subs, full_pbs pb_viewers
+        WHERE pb_viewers.problem_id = subs.problem_id AND subs.contest_id IS NULL AND ($3 IS NULL OR subs.user_id = $3)) -- contest is null, so judge if problem is fully visible (contestants must not see non-contest submissions)
     UNION ALL
     (SELECT subs.id as sub_id
         FROM submissions subs, contest_user_access users
