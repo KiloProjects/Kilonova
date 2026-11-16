@@ -251,7 +251,8 @@ func (s *BaseAPI) UpdateUserPassword(ctx context.Context, uid int, password stri
 	if err := s.userRepo.UpdateUserPasswordHash(ctx, uid, hash); err != nil {
 		return fmt.Errorf("couldn't update password: %w", err)
 	}
-	return nil
+	// A new password must lock out whoever holds an old session (this one included)
+	return s.RemoveUserSessions(ctx, uid)
 }
 
 // TODO: displayName probably doesn't have to be *string, can be just string, but this was implemented quickly

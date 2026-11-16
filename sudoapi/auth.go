@@ -7,10 +7,12 @@ import (
 	"log/slog"
 	"net/netip"
 	"strings"
+	"time"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/domain/user"
 	"github.com/KiloProjects/kilonova/sudoapi/flags"
+	"github.com/Yiling-J/theine-go"
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,6 +20,49 @@ import (
 // Login
 
 func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserFull, error) {
+	ipKey := "ip|"
+	if ip := user.IPContext(ctx); ip != nil {
+		ipKey += ip.String()
+	}
+	userKey := ipKey + "|" + strings.ToLower(uname)
+	if n, _ := loginFailures.Get(userKey); n >= maxLoginFailsPerUser {
+		return nil, Statusf(429, "Too many failed login attempts, try again later")
+	}
+	if n, _ := loginFailures.Get(ipKey); n >= maxLoginFailsPerIP {
+		return nil, Statusf(429, "Too many failed login attempts, try again later")
+	}
+
+	userFull, err := s.checkLogin(ctx, uname, pwd)
+	if err != nil && kilonova.ErrorCode(err) == 400 {
+		for _, key := range []string{userKey, ipKey} {
+			n, _ := loginFailures.Get(key)
+			loginFailures.SetWithTTL(key, n+1, 1, loginFailWindow)
+		}
+	}
+	return userFull, err
+}
+
+// loginFailures counts recent failed logins per (ip, username) and per ip.
+// The per-ip limit is loose because a whole contest lab can sit behind one address.
+// ponytail: in-memory and per process, so it resets on restart and isn't shared between replicas; move to Postgres if that matters.
+var loginFailures = func() *theine.Cache[string, int] {
+	c, err := theine.NewBuilder[string, int](10000).Build()
+	if err != nil {
+		panic(err)
+	}
+	return c
+}()
+
+const (
+	loginFailWindow      = 10 * time.Minute
+	maxLoginFailsPerUser = 10
+	maxLoginFailsPerIP   = 100
+)
+
+// dummyHash is compared against when the account doesn't exist, so a miss costs the same as a wrong password.
+var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("kilonova"), bcrypt.DefaultCost)
+
+func (s *BaseAPI) checkLogin(ctx context.Context, uname, pwd string) (*kilonova.UserFull, error) {
 	userFull, err := s.userRepo.User(ctx, kilonova.UserFilter{Name: &uname})
 	if err != nil {
 		slog.WarnContext(ctx, "Could not get user by username", slog.Any("err", err))
@@ -33,6 +78,7 @@ func (s *BaseAPI) Login(ctx context.Context, uname, pwd string) (*kilonova.UserF
 	}
 
 	if userFull == nil {
+		bcrypt.CompareHashAndPassword(dummyHash, []byte(pwd))
 		return nil, Statusf(400, "Invalid login details")
 	}
 

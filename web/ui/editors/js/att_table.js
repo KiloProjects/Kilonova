@@ -51,7 +51,7 @@
 
             (() => {
                 for (let el of document.querySelectorAll("[id^='name-att-'] > a")) {
-                    el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerText}`
+                    el.innerHTML = `<i class="fas ${bundled.getFileIcon(el.innerText)} fa-fw"></i> ${el.innerHTML}`
                 }
                 for (let el of document.querySelectorAll("[id^='size-att-']")) {
                     el.innerText = bundled.sizeFormatter(Number(el.innerText))

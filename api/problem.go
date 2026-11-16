@@ -35,6 +35,10 @@ func (s *API) maxScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Same rule as maxScoreBreakdown: only editors may ask about somebody else
+	if !s.base.IsProblemEditor(user.UserBrief(r), util.Problem(r)) {
+		args.UserID = -1
+	}
 	if args.UserID <= 0 {
 		if user.UserBrief(r) == nil {
 			errorData(w, "No user specified", 400)

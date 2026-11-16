@@ -102,7 +102,12 @@ func (s *Assets) ServeAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Cache-Control", `public, max-age=3600`)
-	//w.Header().Set("Content-Disposition", "attachment")
+	// Attachments are user uploads served from our own origin: never let the browser guess a type,
+	// and give HTML/SVG an opaque origin with scripts off so they can't act as the viewer.
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	if path.Ext(att.Name) != ".pdf" { // Chrome's PDF viewer refuses to load under a sandbox CSP
+		w.Header().Set("Content-Security-Policy", "sandbox")
+	}
 
 	// If markdown file and client asks for HTML format, render the markdown
 	// TODO: Extract from cache if able to

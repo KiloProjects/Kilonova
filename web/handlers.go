@@ -176,7 +176,7 @@ func (rt *Web) submission(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Web) downloadSubmission(w http.ResponseWriter, r *http.Request) {
-	code, err := rt.base.SubmissionCode(r.Context(), &util.Submission(r).Submission, util.Submission(r).Problem, nil, false)
+	code, err := rt.base.SubmissionCode(r.Context(), &util.Submission(r).Submission, util.Submission(r).Problem, user.UserBrief(r), true)
 	if err != nil {
 		rt.statusPage(w, r, 500, "Failed to retrieve submission code")
 		return

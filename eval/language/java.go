@@ -41,7 +41,9 @@ func (j Java) CompileCommand(files []string) []string {
 		return []string{"err"}
 	}
 
-	return []string{"sh", "-c", "javac " + strings.Join(files, " ") + " && jar cfe output.jar " + strings.ReplaceAll(path.Base(files[0]), ".java", "") + " *.class"}
+	// File names are passed as positional parameters ($0 is the main class), never spliced into the script text,
+	// so shell metacharacters in a user-supplied name stay inert.
+	return slices.Concat([]string{"sh", "-c", `javac "$@" && jar cfe output.jar "$0" *.class`, strings.TrimSuffix(path.Base(files[0]), ".java")}, files)
 }
 
 func (j Java) RunCommand(_ []string, _ int) []string {
@@ -49,10 +51,12 @@ func (j Java) RunCommand(_ []string, _ int) []string {
 }
 
 func (j Java) SourceName(userFilename string) string {
-	if userFilename == "" {
+	// Base keeps the file inside /box no matter what the upload was called
+	name := path.Base(userFilename)
+	if !strings.HasSuffix(name, ".java") && !strings.HasSuffix(name, ".jar") {
 		return "/box/Main.java"
 	}
-	return path.Join("/box/", userFilename)
+	return path.Join("/box/", name)
 }
 
 func (j Java) CompiledName(_ string) string {
