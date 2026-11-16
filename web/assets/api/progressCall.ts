@@ -1,6 +1,6 @@
 import {createToast, dismissToast} from "../toast";
 import getText from "../translation";
-import {defaultClient, Response} from "./client";
+import {Response} from "./client";
 
 export async function multipartProgressCall<T = any>(call: string, formdata: FormData): Promise<Response<T>> {
 	if (call.startsWith("/")) {
@@ -63,7 +63,6 @@ export async function multipartProgressCall<T = any>(call: string, formdata: For
 				});
 			});
 			xhr.setRequestHeader("Accept", "application/json");
-			xhr.setRequestHeader("Authorization", defaultClient.session);
 			xhr.send(formdata);
 		});
 		document.dispatchEvent(

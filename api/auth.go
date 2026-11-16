@@ -40,7 +40,7 @@ func (s *API) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *API) extendSession(w http.ResponseWriter, r *http.Request) {
-	h := getAuthHeader(r)
+	h := s.sessionID(r)
 	if h == "" {
 		slog.DebugContext(r.Context(), "Empty session on endpoint that must be authed")
 		returnData(w, nil)

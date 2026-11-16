@@ -54,7 +54,7 @@ func (s *API) SetupSessionV2(api huma.API) func(ctx huma.Context, next func(huma
 		}
 
 		r, _ := humachi.Unwrap(ctx)
-		sessionUser, err := s.base.SessionUser(ctx.Context(), h, r)
+		sessionUser, err := s.base.SessionUser(ctx.Context(), cmp.Or(h, s.cookieSession(r)), r)
 		if err != nil || sessionUser == nil {
 			next(huma.WithValue(ctx, util.AuthMethodKey, "none"))
 			return

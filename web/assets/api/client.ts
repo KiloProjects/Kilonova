@@ -1,4 +1,3 @@
-import cookie from "js-cookie";
 import qs from "query-string";
 
 export type ResultSubmission = {
@@ -45,16 +44,6 @@ export type Submissions = {
 export type Response<T> = { status: "error"; data: string; statusCode: number } | { status: "success"; data: T; statusCode: number };
 
 export class KNClient {
-	session: string;
-
-	constructor(session: string, base: string) {
-		this.session = session;
-	}
-
-	setSession(newSession: string) {
-		this.session = newSession;
-	}
-
 	async request<T = any>(params: RequestParams): Promise<Response<T>> {
 		if (params.url.startsWith("/")) {
 			params.url = params.url.substring(1);
@@ -64,7 +53,6 @@ export class KNClient {
 				method: params.method,
 				headers: {
 					Accept: "application/json",
-					Authorization: this.session,
 					...params.headers,
 				},
 				body: params.body || null,
@@ -87,7 +75,6 @@ export class KNClient {
 				method: params.method,
 				headers: {
 					Accept: "application/json",
-					Authorization: this.session,
 					...params.headers,
 				},
 				body: params.body || null,
@@ -125,7 +112,7 @@ export class KNClient {
 	}
 }
 
-export const defaultClient = new KNClient(cookie.get("kn-sessionid") || "guest", "/api");
+export const defaultClient = new KNClient();
 
 export async function getCall<T = any>(call: string, params: any, signal?: AbortSignal): Promise<Response<T>> {
 	return defaultClient.request<T>({

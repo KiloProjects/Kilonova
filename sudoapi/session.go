@@ -197,13 +197,14 @@ func (s *BaseAPI) SetSessCookie(w http.ResponseWriter, sid string, persistent bo
 	if persistent {
 		expires = time.Now().Add(400 * 24 * time.Hour)
 	}
-	// Not HttpOnly: the frontend API client sends it as the Authorization header
+	// HttpOnly: no script ever needs it, the API reads the cookie itself for same-origin requests
 	http.SetCookie(w, &http.Cookie{
 		Name:     "kn-sessionid",
 		Value:    sid,
 		Path:     "/",
 		Expires:  expires,
 		Secure:   true,
+		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }

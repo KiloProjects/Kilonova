@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"log/slog"
 	"net/http"
@@ -77,7 +78,7 @@ func (s *API) MustBeProposer(next http.Handler) http.Handler {
 // SetupSession adds the user with the specified user ID to context
 func (s *API) SetupSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionUser, err := s.base.SessionUser(r.Context(), getAuthHeader(r), r)
+		sessionUser, err := s.base.SessionUser(r.Context(), s.sessionID(r), r)
 		if err != nil || sessionUser == nil {
 			if err != nil {
 				slog.WarnContext(r.Context(), "Error getting session user", slog.Any("err", err))
@@ -416,10 +417,33 @@ func (s *API) validateContestID(next http.Handler) http.Handler {
 	})
 }
 
-func getAuthHeader(r *http.Request) string {
+// sessionID is the session a request authenticates with: the Authorization header for
+// API clients, else the browser's session cookie.
+func (s *API) sessionID(r *http.Request) string {
 	header := r.Header.Get("Authorization")
 	if header == "guest" {
 		header = ""
 	}
-	return header
+	return cmp.Or(header, s.cookieSession(r))
+}
+
+// cookieSession returns the session cookie, but only for requests made by our own pages.
+// The cookie rides along automatically, so honouring it from another origin would be CSRF
+// (and, with the open CORS on /api/v2, would let sibling subdomains read responses).
+func (s *API) cookieSession(r *http.Request) string {
+	if !sameOrigin(r) {
+		return ""
+	}
+	return s.base.GetSessCookie(r)
+}
+
+var crossOrigin = http.NewCrossOriginProtection()
+
+// sameOrigin applies the stdlib's cross-origin check (Sec-Fetch-Site, else Origin against Host).
+// The stdlib lets every GET through because it only guards writes; a cookie-authenticated read
+// must be same-origin too, so the check always runs as if the request were a POST.
+func sameOrigin(r *http.Request) bool {
+	asWrite := *r
+	asWrite.Method = http.MethodPost
+	return crossOrigin.Check(&asWrite) == nil
 }
