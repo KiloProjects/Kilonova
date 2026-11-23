@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
@@ -28,6 +29,11 @@ var (
 		}))
 	})
 )
+
+// managerGracePeriod is how long a communication manager may keep running after
+// every user process has exited. It usually still has to read the last answers
+// and write its verdict; interrupting it right away turns that into a race.
+const managerGracePeriod = 2 * time.Second
 
 type BoxFunc func(ctx context.Context, id int, mem int64, logger *slog.Logger) (eval.Sandbox, error)
 
@@ -298,9 +304,11 @@ func (mgr *BoxManager) RunMultibox3(ctx context.Context, req *eval.Multibox3Requ
 
 	managerCtx, cancelManager := context.WithCancel(ctx)
 	userCtx, cancelUser := context.WithCancel(ctx)
+	managerDone := make(chan struct{})
 
 	go func() {
 		defer wg.Done()
+		defer close(managerDone)
 		stats, err := managerBox.RunCommand(managerCtx, req.ManagerSandbox.Command, req.ManagerSandbox.RunConfig)
 		if err != nil {
 			errChan <- err
@@ -342,6 +350,12 @@ func (mgr *BoxManager) RunMultibox3(ctx context.Context, req *eval.Multibox3Requ
 
 	go func() {
 		userWg.Wait()
+		// A manager that is still around after the grace period is stuck
+		// (e.g. opening a fifo that no user process ever opened).
+		select {
+		case <-managerDone:
+		case <-time.After(managerGracePeriod):
+		}
 		cancelManager()
 	}()
 
