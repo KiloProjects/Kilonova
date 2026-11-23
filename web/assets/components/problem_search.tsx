@@ -41,6 +41,10 @@ export function ProblemView({
 		sizes = ["w-1/12", "w-5/12", /*"w-4/12",*/ "", "w-2/12"];
 	}
 
+	if(window.platform_info.admin && latestView) {
+		latestView = false;
+	}
+
 	return (
 		<table class="kn-table table-fixed">
 			<thead>
