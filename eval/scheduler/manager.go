@@ -61,8 +61,14 @@ func (mgr *BoxManager) getBox(ctx context.Context, memQuota int64) (eval.Sandbox
 			return nil, err
 		}
 	}
-	box, err := mgr.boxGenerator(ctx, <-mgr.availableIDs, memQuota, mgr.logger)
+	id := <-mgr.availableIDs
+	box, err := mgr.boxGenerator(ctx, id, memQuota, mgr.logger)
 	if err != nil {
+		// A failed init must not shrink the pool: releaseBox never runs for it.
+		mgr.availableIDs <- id
+		if memQuota > 0 {
+			mgr.memSem.Release(memQuota)
+		}
 		return nil, err
 	}
 	// b.logger.Infof("Acquired box %d", box.GetID())
