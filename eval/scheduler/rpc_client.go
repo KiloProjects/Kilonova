@@ -14,6 +14,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var _ eval.Box3Scheduler = (*GraderClient)(nil)
@@ -37,7 +38,11 @@ func NewGraderClient(httpClient *http.Client, baseURL, token string) *GraderClie
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	return &GraderClient{client: httpClient, baseURL: strings.TrimRight(baseURL, "/"), token: token}
+	// One client span per attempt, with traceparent injected for GraderServer
+	// to continue. Wrapped on a copy so the caller's client is left alone.
+	traced := *httpClient
+	traced.Transport = otelhttp.NewTransport(httpClient.Transport)
+	return &GraderClient{client: &traced, baseURL: strings.TrimRight(baseURL, "/"), token: token}
 }
 
 // call does one JSON request/response. A nil in means GET; out is decoded from

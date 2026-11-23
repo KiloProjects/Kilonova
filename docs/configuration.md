@@ -41,7 +41,7 @@ The process never reads or writes a configuration file: flags are stored in the 
 | `KN_TRUE_IP_HEADER` | *(empty)* | flag `server.listen.true_ip_header` | e.g. `X-Forwarded-For` behind a reverse proxy |
 | `KN_PROMETHEUS_LISTEN` | *(empty)* | flags `integrations.prometheus.enabled` / `port` | e.g. `:8071`; empty disables `/metrics` |
 | `KN_MAXMIND_DB` | `/usr/share/GeoIP/GeoLite2-City.mmdb` | flag `integrations.maxmind.db_path` | |
-| `KN_OTEL_ENABLED` | `false` | flag `integrations.otel.enabled` | endpoint from the standard `OTEL_*` variables |
+| `KN_OTEL_ENABLED` | `false` | flag `integrations.otel.enabled` | endpoint from the standard `OTEL_*` variables; also read by `kn grader-serve` |
 | `KN_DISCORD_TOKEN` | *(empty)* | flags `integrations.discord.enabled` / `token` | a set token enables the integration |
 | `KN_DISCORD_CLIENT_ID` / `KN_DISCORD_CLIENT_SECRET` | *(empty)* | flags `integrations.discord.client_*` | |
 | `KN_OPENAI_TOKEN` | *(empty)* | flag `integrations.openai.token` | enables statement translation/transcription; no longer visible to templates |
@@ -81,7 +81,7 @@ These were editable from the admin page before v26.09 but only took effect after
 | `KN_GRADER_CLIENT_<NAME>` | *(at least one)* | `[[grader.client]]` | one variable per client; `KN_GRADER_CLIENT_KILONOVA=<token>` registers client `kilonova` |
 
 
-`grader-serve` ignores the platform variables other than `KN_DATA_DIR` and `KN_SANDBOX_*`. The migration tool derives its `KN_DATA_DIR` from the parent of the legacy `scratch_dir`, so `/var/lib/kilonova/scratch` keeps working unchanged.
+`grader-serve` ignores the platform variables other than `KN_DATA_DIR`, `KN_SANDBOX_*` and `KN_OTEL_ENABLED`. With OpenTelemetry enabled on both processes, the platform sends its trace context on every `/run/*` and `/languages` request and the grader continues that trace; give each process its own `OTEL_SERVICE_NAME` to tell them apart. The migration tool derives its `KN_DATA_DIR` from the parent of the legacy `scratch_dir`, so `/var/lib/kilonova/scratch` keeps working unchanged.
 
 ## Flag storage
 

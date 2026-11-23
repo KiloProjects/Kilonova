@@ -40,7 +40,7 @@ func envFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "db-count-queries", Usage: "Count SQL queries per request (debugging)", Sources: cli.EnvVars("KN_DB_COUNT_QUERIES"), Destination: &config.DB.CountQueries},
 
 		&cli.StringFlag{Name: "maxmind-db", Usage: "Path to the MaxMind GeoLite2-City database", Value: "/usr/share/GeoIP/GeoLite2-City.mmdb", Sources: cli.EnvVars("KN_MAXMIND_DB"), Destination: &config.Integrations.MaxMindDB},
-		&cli.BoolFlag{Name: "otel-enabled", Usage: "Export OpenTelemetry traces and logs (endpoint from the OTEL_* variables)", Sources: cli.EnvVars("KN_OTEL_ENABLED"), Destination: &config.Integrations.OtelEnabled},
+		&cli.BoolFlag{Name: "otel-enabled", Usage: "Export OpenTelemetry traces and logs (endpoint from the OTEL_* variables; platform and grader-serve)", Sources: cli.EnvVars("KN_OTEL_ENABLED"), Destination: &config.Integrations.OtelEnabled},
 		&cli.StringFlag{Name: "discord-token", Usage: "Discord bot token; empty disables the integration", Sources: cli.EnvVars("KN_DISCORD_TOKEN"), Destination: &config.Integrations.DiscordToken},
 		&cli.StringFlag{Name: "discord-client-id", Sources: cli.EnvVars("KN_DISCORD_CLIENT_ID"), Destination: &config.Integrations.DiscordClientID},
 		&cli.StringFlag{Name: "discord-client-secret", Sources: cli.EnvVars("KN_DISCORD_CLIENT_SECRET"), Destination: &config.Integrations.DiscordClientSecret},

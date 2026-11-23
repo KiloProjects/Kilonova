@@ -68,15 +68,13 @@ func Kilonova(ctx context.Context) error {
 	defer base.Close()
 
 	// Initialize components
-	graderHandler, err := grader.NewHandler(ctx, base)
+	graderHandler, err := grader.NewHandler(base)
 	if err != nil {
 		slog.ErrorContext(ctx, "Could not initialize grader", slog.Any("err", err))
 		return err
 	}
-	defer graderHandler.Close()
+	defer graderHandler.Close(context.WithoutCancel(ctx))
 
-	// The sandbox backend is per process and shared by every tenant's handler. It is
-	// built in the background so an unreachable remote grader doesn't block startup.
 	go func() {
 		backend, err := grader.NewBackend(ctx, config.Eval, config.Common.ScratchDir())
 		if err != nil {
@@ -84,7 +82,7 @@ func Kilonova(ctx context.Context) error {
 			return
 		}
 		defer backend.Close(context.WithoutCancel(ctx))
-		if err := graderHandler.Start(backend); err != nil {
+		if err := graderHandler.Start(ctx, backend); err != nil {
 			slog.ErrorContext(ctx, "Could not start grader", slog.Any("err", err))
 		}
 	}()

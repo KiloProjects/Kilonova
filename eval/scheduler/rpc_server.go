@@ -12,6 +12,7 @@ import (
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/eval"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Wire envelopes. eval.* structs are encoded directly; these only add the
@@ -84,7 +85,9 @@ func (s *GraderServer) Handler() http.Handler {
 	mux.HandleFunc("POST /run/box3", s.runBox3)
 	mux.HandleFunc("POST /run/multibox3", s.runMultibox3)
 	mux.HandleFunc("GET /languages", s.languages)
-	return mux
+	// Continues the trace GraderClient sent. It has to wrap this mux directly:
+	// the span is named after the pattern the mux matched ("POST /run/box3").
+	return otelhttp.NewHandler(mux, "grader")
 }
 
 func decode(w http.ResponseWriter, r *http.Request, v any) bool {

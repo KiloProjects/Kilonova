@@ -29,7 +29,13 @@ func SetupOpenTelemetry(ctx context.Context, enabled bool) (shutdown func(contex
 	// shutdown calls cleanup functions registered via shutdownFuncs.
 	// The errors from the calls are joined.
 	// Each registered cleanup will be invoked once.
+	//
+	// Callers defer it with a signal context that is already cancelled by then,
+	// which would drop the final batch, so it detaches from that. The deadline
+	// keeps an unreachable collector from stalling exit.
 	shutdown = func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
 		var err error
 		for _, fn := range shutdownFuncs {
 			err = errors.Join(err, fn(ctx))

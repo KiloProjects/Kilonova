@@ -16,6 +16,7 @@ import (
 	"github.com/KiloProjects/kilonova/eval/box"
 	"github.com/KiloProjects/kilonova/eval/scheduler"
 	"github.com/KiloProjects/kilonova/eval/scratch"
+	"github.com/KiloProjects/kilonova/infra/otel"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v3"
 )
@@ -37,6 +38,14 @@ var graderServe = &cli.Command{
 		&cli.IntFlag{Name: "scratch-ttl-sec", Usage: "Orphan scratch GC TTL in seconds; must exceed the longest eval", Value: 3600, Sources: cli.EnvVars("KN_GRADER_SCRATCH_TTL_SEC"), Destination: &graderConf.ScratchTTLSec},
 	},
 	Action: func(ctx context.Context, command *cli.Command) error {
+		// Same KN_OTEL_ENABLED and OTEL_* contract as the platform. Without this
+		// the grader has no propagator and exports nothing.
+		shutdownOtel, err := otel.SetupOpenTelemetry(ctx, config.Integrations.OtelEnabled)
+		if err != nil {
+			return err
+		}
+		defer shutdownOtel(ctx)
+
 		g := graderConf
 		if err := config.RequireDataDir(); err != nil { // scratch/ and logs/ live under KN_DATA_DIR
 			return err

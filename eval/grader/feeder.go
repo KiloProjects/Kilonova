@@ -11,6 +11,9 @@ import (
 	"github.com/KiloProjects/kilonova/domain/config"
 	"github.com/KiloProjects/kilonova/eval"
 	"github.com/KiloProjects/kilonova/sudoapi"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -26,7 +29,6 @@ var (
 )
 
 type Handler struct {
-	ctx   context.Context
 	sChan chan *kilonova.Submission
 	base  *sudoapi.BaseAPI
 
@@ -55,9 +57,9 @@ func initLogger() {
 
 // NewHandler is one tenant's grader: it feeds base's waiting submissions to the
 // shared Backend passed to Start.
-func NewHandler(ctx context.Context, base *sudoapi.BaseAPI) (*Handler, error) {
+func NewHandler(base *sudoapi.BaseAPI) (*Handler, error) {
 	initLogger()
-	return &Handler{ctx: ctx, sChan: make(chan *kilonova.Submission, 1), base: base, wakeChan: make(chan struct{}, 1)}, nil
+	return &Handler{sChan: make(chan *kilonova.Submission, 1), base: base, wakeChan: make(chan struct{}, 1)}, nil
 }
 
 func (h *Handler) Wake() {
@@ -67,7 +69,11 @@ func (h *Handler) Wake() {
 	}
 }
 
-func (h *Handler) runSubmission(runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
+func (h *Handler) runSubmission(ctx context.Context, runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
+	ctx, span := otel.Tracer("grader").Start(ctx, "RunSubmission", trace.WithNewRoot(),
+		trace.WithAttributes(attribute.Int("submission.id", sub.ID)))
+	defer span.End()
+
 	// TODO: Do this in a smarter way
 	// var numConc int64
 	// if sub.SubmissionType == kilonova.EvalTypeClassic {
@@ -80,70 +86,70 @@ func (h *Handler) runSubmission(runner eval.BoxScheduler, langMgr eval.LanguageM
 	// 	return err
 	// }
 
-	if err := h.base.UpdateSubmission(h.ctx, sub.ID, workingUpdate); err != nil {
+	if err := h.base.UpdateSubmission(ctx, sub.ID, workingUpdate); err != nil {
 		return err
 	}
 	// go func(sub *kilonova.Submission, runner eval.BoxScheduler) {
-	// defer runner.Close(h.ctx)
-	if err := executeSubmission(h.ctx, h.base, runner, langMgr, sub); err != nil {
-		slog.WarnContext(h.ctx, "Couldn't run submission", slog.Any("err", err))
+	// defer runner.Close(ctx)
+	if err := executeSubmission(ctx, h.base, runner, langMgr, sub); err != nil {
+		slog.WarnContext(ctx, "Couldn't run submission", slog.Any("err", err))
 	}
 	// }(sub, runner)
 	return nil
 }
 
-func (h *Handler) ScheduleSubmission(runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
-	return h.runSubmission(runner, langMgr, sub)
+func (h *Handler) ScheduleSubmission(ctx context.Context, runner eval.BoxScheduler, langMgr eval.LanguageManager, sub *kilonova.Submission) error {
+	return h.runSubmission(ctx, runner, langMgr, sub)
 }
 
-func (h *Handler) handle(runner eval.BoxScheduler, langMgr eval.LanguageManager) error {
+func (h *Handler) handle(ctx context.Context, runner eval.BoxScheduler, langMgr eval.LanguageManager) error {
 	for {
 		select {
-		case <-h.ctx.Done():
-			return h.ctx.Err()
+		case <-ctx.Done():
+			return ctx.Err()
 		case _, more := <-h.wakeChan:
 			if !more {
 				return nil
 			}
 			var rewake bool
 
-			subs, err := h.base.RawSubmissions(h.ctx, waitingSubs)
+			subs, err := h.base.RawSubmissions(ctx, waitingSubs)
 			if err != nil {
-				slog.WarnContext(h.ctx, "Couldn't get waiting submissions", slog.Any("err", err))
+				slog.WarnContext(ctx, "Couldn't get waiting submissions", slog.Any("err", err))
 			} else if len(subs) > 0 {
-				graderLogger.InfoContext(h.ctx, "Found waiting submissions", slog.Int("count", len(subs)))
+				graderLogger.InfoContext(ctx, "Found waiting submissions", slog.Int("count", len(subs)))
 				if len(subs) > 40 {
 					subs = subs[:40]
 					rewake = true
 				}
 				for _, sub := range subs {
-					if err := h.ScheduleSubmission(runner, langMgr, sub); err != nil {
-						slog.WarnContext(h.ctx, "Couldn't schedule waiting submission", slog.Any("err", err))
+					if err := h.ScheduleSubmission(ctx, runner, langMgr, sub); err != nil {
+						slog.WarnContext(ctx, "Couldn't schedule waiting submission", slog.Any("err", err))
 					}
 				}
 			}
 
-			reevalQueue, err := h.base.RawSubmissions(h.ctx, reevalingSubs)
+			reevalQueue, err := h.base.RawSubmissions(ctx, reevalingSubs)
 			if err != nil {
-				slog.WarnContext(h.ctx, "Could not get raw submissions", slog.Any("err", err))
+				slog.WarnContext(ctx, "Could not get raw submissions", slog.Any("err", err))
 			} else if len(reevalQueue) > 0 {
-				graderLogger.InfoContext(h.ctx, "Found submissions to reevaluate", slog.Int("count", len(reevalQueue)))
+				graderLogger.InfoContext(ctx, "Found submissions to reevaluate", slog.Int("count", len(reevalQueue)))
 				if len(reevalQueue) > 5 {
 					reevalQueue = reevalQueue[:5]
 					rewake = true
 				}
 				for _, sub := range reevalQueue {
-					if err := h.base.ResetSubmission(h.ctx, sub.ID); err != nil {
-						slog.WarnContext(h.ctx, "Couldn't reset submission", slog.Any("err", err))
+					if err := h.base.ResetSubmission(ctx, sub.ID); err != nil {
+						slog.WarnContext(ctx, "Couldn't reset submission", slog.Any("err", err))
 						continue
 					}
-					sub2, err := h.base.RawSubmission(h.ctx, sub.ID)
+					sub2, err := h.base.RawSubmission(ctx, sub.ID)
 					if err != nil {
-						slog.WarnContext(h.ctx, "Error refetching submission for reeval", slog.Any("err", err))
+						slog.WarnContext(ctx, "Error refetching submission for reeval", slog.Any("err", err))
 						sub2 = sub
 					}
-					if err := h.ScheduleSubmission(runner, langMgr, sub2); err != nil {
-						slog.WarnContext(h.ctx, "Couldn't schedule reevaluation submission", slog.Any("err", err))
+					if err := h.ScheduleSubmission(ctx, runner, langMgr, sub2); err != nil {
+						slog.WarnContext(ctx, "Couldn't schedule reevaluation submission", slog.Any("err", err))
 					}
 				}
 			}
@@ -158,7 +164,7 @@ func (h *Handler) handle(runner eval.BoxScheduler, langMgr eval.LanguageManager)
 
 // Start runs this tenant's feed loop on backend until ctx ends. It does not close
 // backend, which other tenants may share.
-func (h *Handler) Start(backend *Backend) error {
+func (h *Handler) Start(ctx context.Context, backend *Backend) error {
 	runner, langMgr := backend.runner(h.base.DataStore()), backend.langs
 	h.runner = runner
 
@@ -171,28 +177,28 @@ func (h *Handler) Start(backend *Backend) error {
 			select {
 			case <-ticker.C:
 				h.Wake()
-			case <-h.ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 
-	slog.InfoContext(h.ctx, "Connected to eval")
+	slog.InfoContext(ctx, "Connected to eval")
 
-	if err := h.handle(runner, langMgr); err != nil {
-		slog.ErrorContext(h.ctx, "Handling error", slog.Any("err", err))
+	if err := h.handle(ctx, runner, langMgr); err != nil {
+		slog.ErrorContext(ctx, "Handling error", slog.Any("err", err))
 		return err
 	}
 	return nil
 }
 
-func (h *Handler) Close() {
+func (h *Handler) Close(ctx context.Context) {
 	h.closeOnce.Do(func() { close(h.wakeChan) })
 	closeAction.Do(func() {
 		// Nothing to close when logs go to stdout (KN_LOG_FILE=false).
 		if c, ok := logFile.(io.Closer); ok {
 			if err := c.Close(); err != nil {
-				slog.WarnContext(h.ctx, "Error closing grader.log", slog.Any("err", err))
+				slog.WarnContext(ctx, "Error closing grader.log", slog.Any("err", err))
 			}
 		}
 	})
