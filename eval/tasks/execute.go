@@ -1,13 +1,13 @@
 package tasks
 
 import (
-	"cmp"
 	"context"
 	"log/slog"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/KiloProjects/kilonova/domain/datastore"
 	"github.com/KiloProjects/kilonova/eval"
@@ -290,12 +290,15 @@ func mergeStats(concurrent bool, stats ...*eval.RunStats) *eval.RunStats {
 			mergedStats.Memory = max(mergedStats.Memory, stat.Memory)
 			mergedStats.Time += stat.Time
 		}
-		stat.Killed = cmp.Or(stat.Killed, mergedStats.Killed)
-		stat.ExitCode = cmp.Or(stat.ExitCode, mergedStats.ExitCode)
-		stat.ExitSignal = cmp.Or(stat.ExitSignal, mergedStats.ExitSignal)
-		stat.Message = cmp.Or(stat.Message, mergedStats.Message)
-		stat.Status = cmp.Or(stat.Status, mergedStats.Status)
-		stat.MemoryLimitExceeded = cmp.Or(stat.MemoryLimitExceeded, mergedStats.MemoryLimitExceeded)
+		// As in CMS, the first user process that failed decides the verdict and the
+		// manager's output is ignored. SIGINT and SIGPIPE are not failures of the
+		// process itself: the scheduler interrupts whoever is still running once the
+		// manager is done, and writing to a manager that already hung up raises SIGPIPE.
+		runOver := stat.Status == "SG" && (stat.ExitSignal == int(syscall.SIGINT) || stat.ExitSignal == int(syscall.SIGPIPE))
+		if mergedStats.Status == "" && !runOver {
+			mergedStats.Status, mergedStats.Message = stat.Status, stat.Message
+		}
+		mergedStats.MemoryLimitExceeded = mergedStats.MemoryLimitExceeded || stat.MemoryLimitExceeded
 	}
 
 	return &mergedStats
