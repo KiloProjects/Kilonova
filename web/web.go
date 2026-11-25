@@ -97,7 +97,6 @@ func (rt *Web) Handler() http.Handler {
 	r.Use(rt.initSession)
 	r.Use(rt.initLanguage)
 	r.Use(rt.initTheme)
-	r.Use(rt.recover)
 	csrf := http.NewCrossOriginProtection()
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

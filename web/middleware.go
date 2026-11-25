@@ -429,19 +429,6 @@ func (rt *Web) initTheme(next http.Handler) http.Handler {
 	})
 }
 
-func (rt *Web) recover(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				rt.statusPage(w, r, 500, "Internal server error, please report to admin")
-				slog.ErrorContext(r.Context(), "Panic on webpage", slog.Any("err", err))
-			}
-		}()
-
-		next.ServeHTTP(w, r)
-	})
-}
-
 // mustManageOAuthClients gates the OAuth application management pages
 func (rt *Web) mustManageOAuthClients(next http.Handler) http.Handler {
 	return rt.mustBeAuthed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

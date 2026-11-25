@@ -52,7 +52,7 @@ func Communication(ctx context.Context, p CommunicationParams) Node {
 						H2(ui.T(ctx, "ask_question")),
 						Label(
 							Span(Class("form-label text-base"), ui.T(ctx, "question_text"), Text(":")),
-							Textarea(ID("question_area"), Class("form-textarea w-full my-2")),
+							Textarea(ID("question_area"), Class("form-textarea w-full my-2"), MaxLength(strconv.Itoa(kilonova.MaxContestQuestionLen))),
 						),
 						ui.SubmitButton(ui.T(ctx, "button.add")),
 					),

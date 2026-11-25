@@ -242,6 +242,9 @@ type ContestUpdate struct {
 	PerUserTime *int `json:"per_user_time"` // Seconds
 }
 
+// MaxContestQuestionLen is the longest question a participant may ask, in characters.
+const MaxContestQuestionLen = 10000
+
 type ContestQuestion struct {
 	ID        int       `json:"id"`
 	AuthorID  int       `json:"author_id"`

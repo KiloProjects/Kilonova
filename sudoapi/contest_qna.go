@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"github.com/KiloProjects/kilonova"
 	"github.com/KiloProjects/kilonova/db"
 )
 
 func (s *BaseAPI) CreateContestQuestion(ctx context.Context, contest *kilonova.Contest, authorID int, text string) (int, error) {
+	if utf8.RuneCountInString(text) > kilonova.MaxContestQuestionLen {
+		return -1, Statusf(http.StatusBadRequest, "Question is too long, the limit is %d characters.", kilonova.MaxContestQuestionLen)
+	}
 	if contest.QuestionCooldown > 0 {
 		question, err := s.db.ContestQuestions(ctx, db.QuestionFilter{ContestID: &contest.ID, AuthorID: &authorID})
 		if err != nil {

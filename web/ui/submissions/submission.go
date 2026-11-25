@@ -319,7 +319,10 @@ func summary(ctx context.Context, sub *kilonova.FullSubmission, pasteAuthor *kil
 			If(sub.CodeSize > 0, row("codeSize", Text(humanize.IBytes(uint64(sub.CodeSize))))),
 			row("status", Text(string(sub.Status))),
 			Iff(sub.CompileTime != nil, func() Node { return row("compileTime", Text(fmt.Sprint(math.Floor(*sub.CompileTime*1000))+" ms")) }),
-			Iff(u.IsAdmin() && sub.IP != nil, func() Node { return row("ipAddr", Text(sub.IP.String())) }),
+			Iff(u.IsAdmin() && sub.IP != nil, func() Node {
+				// <wbr> after every ":" lets an IPv6 address wrap instead of stretching the sidebar.
+				return row("ipAddr", Map(strings.SplitAfter(sub.IP.String(), ":"), func(p string) Node { return Group{Text(p), Wbr()} }))
+			}),
 		)),
 	)
 }
