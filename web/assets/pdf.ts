@@ -31,12 +31,16 @@ document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
 
 class KNPDF extends HTMLElement {
 	private teardown?: () => void;
+	// Markup for the browser's own viewer. The server puts it in a <noscript>, whose
+	// content the browser keeps as text while scripting is on.
+	private fallback?: string;
 
 	connectedCallback() {
 		const src = this.getAttribute("src");
 		if (!src) {
 			return;
 		}
+		this.fallback ??= this.querySelector("noscript")?.textContent ?? "";
 
 		// PDFViewer wants an absolutely positioned scroll container holding the pages element.
 		const scroller = document.createElement("div");
@@ -100,7 +104,13 @@ class KNPDF extends HTMLElement {
 				console.error("Could not load PDF", src, err);
 				this.teardown?.();
 				this.style.height = "auto";
-				this.textContent = bundled.getText("pdf.load_error");
+				// The browser's own viewer forgives more damage than pdf.js does. It cannot help
+				// if the file never arrived, or where there is no such viewer (most phones).
+				if (this.fallback && navigator.pdfViewerEnabled && err?.name !== "ResponseException") {
+					this.innerHTML = this.fallback;
+				} else {
+					this.textContent = bundled.getText("pdf.load_error");
+				}
 			});
 	}
 

@@ -12,6 +12,7 @@ func TestPDFViewer(t *testing.T) {
 		`<a class="btn btn-blue" target="_blank" href="/assets/a&#34;b.pdf?t=1">Download</a>`,
 		`<kn-pdf src="/assets/a&#34;b.pdf?t=1"><noscript><embed class="mx-2 my-2" type="application/pdf" src="/assets/a&#34;b.pdf?t=1"`,
 		`</noscript></kn-pdf>`,
-		`<script type="module" src="/static/misc/pdf-abc.js"></script>`,
+		`<script type="module" src="/static/misc/pdf-abc.js" onerror="for (const n of document.querySelectorAll(&#34;kn-pdf &gt; noscript&#34;))`,
+		`onload="customElements.get(&#34;kn-pdf&#34;) || this.onerror()"></script>`,
 	)
 }

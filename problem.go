@@ -82,7 +82,7 @@ type StatementVariant struct {
 	Type string `json:"type"`
 	// Private is true if the attachment for this statement variant is private.
 	// it may be private if it's currently being worked on.
-	Private bool `json:"public"`
+	Private bool `json:"private"`
 
 	LastUpdatedAt time.Time `json:"last_updated_at"`
 
