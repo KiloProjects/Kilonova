@@ -2625,6 +2625,18 @@ ro = "Descărcare enunț"
 en = "Download contents"
 ro = "Descărcare conținut"
 
+[pdf.zoom_in]
+en = "Zoom in"
+ro = "Mărește"
+
+[pdf.zoom_out]
+en = "Zoom out"
+ro = "Micșorează"
+
+[pdf.load_error]
+en = "Could not load the PDF."
+ro = "PDF-ul nu a putut fi încărcat."
+
 [score_breakdown_title]
 en = "Score breakdown"
 ro = "Analiza scorului"

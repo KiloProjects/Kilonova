@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -45,12 +46,9 @@ func (rt *Web) problem() http.HandlerFunc {
 				statement = []byte("Error loading markdown.")
 			}
 		case "pdf":
-			statement = fmt.Appendf(nil,
-				`<a class="btn btn-blue" target="_blank" href="%s">%s</a>
-					<embed class="mx-2 my-2" type="application/pdf" src="%s"
-					style="width:95%%; height: 90vh; background: white; object-fit: contain;"></embed>`,
-				assetLink, kilonova.GetText(util.Language(r), "desc_link"), assetLink,
-			)
+			var b bytes.Buffer
+			ui.PDFViewer(assetLink, assets.Asset(ctx, "pdf.ts"), kilonova.GetText(util.Language(r), "desc_link")).Render(&b)
+			statement = b.Bytes()
 		case "":
 		default:
 			statement = fmt.Appendf(nil,

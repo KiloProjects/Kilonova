@@ -3,9 +3,9 @@
     "version": "1.0.0",
     "description": "Asset 'pipeline' for Kilonova",
     "scripts": {
-        "clean": "rm -rf ../static/misc ../static/manifest.*.json",
-        "build": "pnpm run clean && vite build && BUNDLE=vendored vite build && BUNDLE=css vite build",
-        "watch": "vite build --watch & BUNDLE=vendored vite build --watch & BUNDLE=css vite build --watch"
+        "clean": "rm -rf ../static/misc ../static/pdfjs ../static/manifest.*.json",
+        "build": "pnpm run clean && vite build && BUNDLE=vendored vite build && BUNDLE=css vite build && BUNDLE=pdf vite build",
+        "watch": "vite build --watch & BUNDLE=vendored vite build --watch & BUNDLE=css vite build --watch & BUNDLE=pdf vite build --watch"
     },
     "license": "",
     "private": true,
@@ -34,6 +34,7 @@
         "lit": "^3.3.3",
         "lodash-es": "^4.18.1",
         "notyf": "^3.10.0",
+        "pdfjs-dist": "^6.5.438",
         "preact": "^10.29.2",
         "preact-custom-element": "^4.6.0",
         "query-string": "^9.4.0",

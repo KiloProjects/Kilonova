@@ -1,5 +1,7 @@
+import {cpSync} from "node:fs";
+import {resolve} from "node:path";
 import tailwindcss from "@tailwindcss/vite";
-import {defineConfig, type UserConfig} from "vite";
+import {defineConfig, type Plugin, type UserConfig} from "vite";
 
 // Templates call `bundled.*` / `vendored.*` from inline classic scripts, so each JS
 // bundle has to stay an IIFE exposing a global. Rollup only emits IIFE for a single
@@ -15,13 +17,32 @@ const bundles: Record<string, UserConfig["build"]> = {
 			input: ["chroma.css", "vendor.css", "tailwind.css"],
 		}
 	},
+	// pdf.js is only wanted on the pages that show a PDF, and its worker has to be a file
+	// of its own, which lib mode would inline. So it is a plain ES module entry, loaded
+	// with <script type="module"> next to the <kn-pdf> element (see ui.PDFViewer).
+	pdf: {
+		rollupOptions: {
+			input: ["pdf.ts"],
+		}
+	},
+};
+
+// pdf.js fetches its character maps, fallback fonts and image decoders by file name at
+// runtime, so they are copied as they are (to /static/pdfjs) instead of being bundled.
+const pdfjsRuntimeAssets: Plugin = {
+	name: "pdfjs-runtime-assets",
+	closeBundle() {
+		for (const dir of ["cmaps", "standard_fonts", "wasm", "iccs"]) {
+			cpSync(resolve(import.meta.dirname, "node_modules/pdfjs-dist", dir), resolve(import.meta.dirname, "../static/pdfjs", dir), {recursive: true});
+		}
+	},
 };
 
 const bundle = process.env.BUNDLE ?? "bundled";
 if (!(bundle in bundles)) throw new Error(`unknown BUNDLE=${bundle}`);
 
 export default defineConfig({
-	plugins: [tailwindcss()],
+	plugins: [tailwindcss(), bundle === "pdf" && pdfjsRuntimeAssets],
 	// Everything is served under /static, which is what url() references inside the CSS
 	// get prefixed with. Output paths stay relative to outDir, so the manifest is
 	// unaffected and Go still joins "/static/" onto what it reads from there.

@@ -15,7 +15,7 @@ import (
 // Catches a missing/stale Vite build as well as a manifest key that no longer
 // matches what the templates ask for.
 func TestAssetsResolveToEmbeddedFiles(t *testing.T) {
-	for _, src := range []string{"app.ts", "vendored.ts", "chroma.css", "vendor.css", "tailwind.css"} {
+	for _, src := range []string{"app.ts", "vendored.ts", "pdf.ts", "chroma.css", "vendor.css", "tailwind.css"} {
 		url := assets.Asset(t.Context(), src)
 		if !assert.True(t, strings.HasPrefix(url, "/static/misc/"), "%s: not in the manifest, got %q", src, url) {
 			continue
@@ -69,5 +69,26 @@ func TestCSSAssetURLsResolve(t *testing.T) {
 		if src == "vendor.css" {
 			assert.NotZero(t, found, "vendor.css: no webfont references found, the check is not testing anything")
 		}
+	}
+}
+
+// pdf.js loads its worker and its runtime assets by URL, from inside the bundle, so
+// neither the manifest nor the compiler notices when one of them is missing.
+func TestPDFJSFilesAreServed(t *testing.T) {
+	js, err := fs.ReadFile(embedded, strings.TrimPrefix(assets.Asset(t.Context(), "pdf.ts"), "/"))
+	require.NoError(t, err)
+	worker := regexp.MustCompile(`/static/misc/pdf\.worker[\w.-]*\.mjs`).Find(js)
+	require.NotNil(t, worker, "pdf.ts does not reference its worker")
+
+	w := httptest.NewRecorder()
+	staticFileServer(w, httptest.NewRequest(http.MethodGet, string(worker), nil))
+	assert.Equal(t, http.StatusOK, w.Code, string(worker))
+	// Browsers refuse to start a module worker served as anything else.
+	assert.Contains(t, w.Header().Get("Content-Type"), "javascript", string(worker))
+
+	for _, dir := range []string{"cmaps", "standard_fonts", "wasm", "iccs"} {
+		files, err := fs.ReadDir(embedded, "static/pdfjs/"+dir)
+		assert.NoError(t, err, dir)
+		assert.NotEmpty(t, files, dir)
 	}
 }
